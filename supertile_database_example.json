@@ -1,0 +1,36 @@
+{
+    "data": [
+        {
+            "MainId": 1111,
+            "firstName": "Sherlock",
+            "lastName": "Homes",
+            "categories": [
+                {
+                    "CategoryID": 1,
+                    "CategoryName": "Example"
+                }
+            ]
+        },
+        {
+            "MainId": 122,
+            "firstName": "James",
+            "lastName": "Watson",
+            "categories": [
+                {
+                    "CategoryID": 2,
+                    "CategoryName": "Example2"
+                }
+            ]
+        }
+    ],
+    "messages": [],
+    "success": true,
+
+    "example_of_my_sceme": {
+        "notes":"Have oen .json file for each type of core gate (this on is for example for y-gates that can be orientated in all four directions",
+        "file":
+        {
+            "":"test"
+        }
+    }
+}
