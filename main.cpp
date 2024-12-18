@@ -14,6 +14,7 @@ const char* helpMessage =
     "    -l                    Prints a more detailed layout with the naming system.\n"
     "    -c                    Prints list with possible core gates.\n"
     "    -t                    Print out the time it took to calculate the layout, if a layout is generated.\n"
+    "    -p                    Print the wire paths for better visualisation, this will HEAVILY impact the measured time for the layout calculation, which is show by -t\n"
     "    -r                    Prints a reduced output, usefull for further processing. The order of the gates is:\n"
     "                          [Core, 0, 1, 2, 3, 4, 5]\n"
     "  Example:\n"
@@ -82,7 +83,7 @@ void printHelpMessage(const char*);
 void printLayoutExplanation();
 void printCoreGateList();
 int* extractPositions(char*, int);
-superTile* solver2in1out(int*, int*, char*);
+superTile* solver2in1out(int*, int*, char*, bool);
     gate* getYCore(int*, int*);
     gate* getYCoreUpright(int*, int*);
     bool goClockwise(int, int, int);
@@ -90,7 +91,7 @@ superTile* solver2in1out(int*, int*, char*);
     int* getWireTileConnections(wireType**, int);
     bool getWireTile(int*, int, gate*);
     bool giveWireGateName(wire, gate*);
-superTile* solver1in1out(int*, int*, char*);
+superTile* solver1in1out(int*, int*, char*, bool);
 void printLayout(superTile*);
     void setNormalisedString(const char*, char*);
     void setNormalisedNumbers(int*, int, char*);
@@ -112,11 +113,12 @@ int main(int argc, char** argv)
 
     bool trackTime = false;
     bool reducedOutput = false;
+    bool printTheWirePaths = false;
 
     //Get optional Arguments
     int opt;
     bool exit = false;
-    while ((opt = getopt(argc, argv, "hlctr")) != -1) {
+    while ((opt = getopt(argc, argv, "hlctpr")) != -1) {
         switch (opt) {
             case 'h':
                 printHelpMessage(programName);
@@ -135,6 +137,9 @@ int main(int argc, char** argv)
                 break;
             case 'r':
                 reducedOutput = true;
+                break;
+            case 'p':
+                printTheWirePaths = true;
                 break;
             default:
                 printf("Reffer to %s -h for further information.\n", programName);
@@ -193,7 +198,7 @@ int main(int argc, char** argv)
     //Check number of in/out and chose fitting method
     if(inPositionsSize == 2 && outPositionsSize == 1) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
-        finishedLayout = solver2in1out(inPositions, outPositions, coreName);
+        finishedLayout = solver2in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
 
         if (finishedLayout == NULL) {
@@ -203,7 +208,7 @@ int main(int argc, char** argv)
         }
     } else if (inPositionsSize == 1 && outPositionsSize == 1) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
-        finishedLayout = solver1in1out(inPositions, outPositions, coreName);
+        finishedLayout = solver1in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
 
         if (finishedLayout == NULL) {
@@ -260,7 +265,7 @@ int* extractPositions (char* positionsText, int textSize) {
     return positions;
 }
 
-superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName) {
+superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, bool printTheWirePaths) {
     /** Matrix structure: Each (triple) represents one tile, and the respective [tree numbers] represent the core-connection, the next-clockwise-tile-connection and the outwards-connection, see diagram:
      * 
      *         ˍ---¯ ¯[2]ˍ ˍ---¯ ¯---ˍ
@@ -524,8 +529,10 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName) {
         super->wires[currentGate] = wireGate;
     }
 
-    // printWirePaths(outerTiles, core); //Can be use for debugging
-
+    if (printTheWirePaths) {
+        printWirePaths(outerTiles, core); //Can be use for debugging
+    }
+   
     for (int x = 0; x < 6; x++) {
         free(outerTiles[x]);
     }
@@ -761,7 +768,7 @@ gate* getYCoreUpright(int* inPositions, int* outPosition) {
 }
 
 
-superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName) {
+superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool printTheWirePaths) {
     wireType** outerTiles = (wireType**) malloc(sizeof(wireType*)*6);
     for (int x = 0; x < 6; x++) {
         outerTiles[x] = (wireType*) malloc(sizeof(wireType)*3);
@@ -843,8 +850,10 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName) {
         super->wires[currentGate] = wireGate;
     }
     
-    // printWirePaths(outerTiles, core); // can be used for debugging
-
+    if (printTheWirePaths) {
+        printWirePaths(outerTiles, core); // can be used for debugging
+    }
+    
     for (int x = 0; x < 6; x++) {
         free(outerTiles[x]);
     }
@@ -1371,7 +1380,7 @@ void setNormalisedNumbers(int* positions, int positionsSize, char* normalised) {
 }
 
 void printReducedLayout(superTile* layout) {
-    printf("[%s, %s, %s, %s, %s, %s, %s]\n", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
+    printf("[%s, %s, %s, %s, %s, %s, %s]", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
 }
 
 void freeGate(gate* toFree) {
