@@ -1380,7 +1380,7 @@ void setNormalisedNumbers(int* positions, int positionsSize, char* normalised) {
 }
 
 void printReducedLayout(superTile* layout) {
-    printf("[%s, %s, %s, %s, %s, %s, %s]", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
+    printf("%s, %s, %s, %s, %s, %s, %s", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
 }
 
 void freeGate(gate* toFree) {
