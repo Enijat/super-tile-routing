@@ -1,5 +1,7 @@
 main
 super-tile_layout_generator
+1in1out_super-tile_layouts.json
+2in1out_super-tile_layouts.json
 
 # Prerequisites
 *.d

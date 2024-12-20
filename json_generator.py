@@ -4,7 +4,7 @@ import sys
 lookupArrayForFile = []
 directions = ["0", "1", "2", "3", "4", "5"]
 
-#TODO beschreibung dieser Methode
+# Transforms the wire naming system used in "super-tile_layout_generator" to the one used in fiction
 def wireLookup(wireName) :
     match wireName :
         case "empty" :
@@ -70,15 +70,22 @@ def wireLookup(wireName) :
         case _:
             return "ERROR_wire-not-found"
 
-#This function is perfect only by definition, but not by execution, meaning that there is good chance there is a simpler function with the same result
-def perfectHashFunction(A, B, C) :
+# Transforms the gate naming system used in "super-tile_layout_generator" to the one used in fiction
+def coreLookup(coreName) :
+    return coreName #TODO implement this in c and then here
+
+# This function is perfect only by definition, but not by execution, meaning that there is good chance there is a simpler function with the same result
+def perfectHashFunction2in1out(A, B, C) :
     b = (B - A) % 6
     c = (C - A) % 6
     basicResult = 2*(b + c) + abs(b - c)
     reducedResult = ((((basicResult - 8) % 13) - 4) % 11) - 1 # reduces the 10 different numbers in basicResult to the range 0 - 9
     return 10 * A + reducedResult
 
-#This function generates the .json file for gates with 2 inputs and 1 output
+def perfectHashFunction1in1out(A, B) :
+    return A * 5 + ((B - A) % 6) - 1
+
+# Generates the .json file for gates with 2 inputs and 1 output
 def generate2in1out() :
     for directionOut in directions :# Represents the output wire
         for i in range(10) :
@@ -99,20 +106,18 @@ def generate2in1out() :
                         executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
                         executed_binary.wait()
                         output = executed_binary.stdout.read().decode().split(", ")
-                        supertileWires = ["", "", "", "", "", ""]
-                        supertileWires[0:6] = output[1:7]
 
                         # Write array entry
                         arrayEntry = '\"' + directionOut + directionIn1 + directionIn2 + '\": ['
 
-                        arrayEntry += '\"' + wireLookup(supertileWires[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
-                        for wire in supertileWires[1:6] :
+                        arrayEntry += '\"' + coreLookup(output[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
+                        for wire in output[1:7] :
                             arrayEntry += ', \"' + wireLookup(wire) + '\"'
                         
                         arrayEntry += ']'
 
                         # Add array entry
-                        lookupArrayForFile[perfectHashFunction(int(directionOut), int(directionIn1), int(directionIn2))] = arrayEntry
+                        lookupArrayForFile[perfectHashFunction2in1out(int(directionOut), int(directionIn1), int(directionIn2))] = arrayEntry
 
     # Write array to file
     output_file = open(r"2in1out_super-tile_layouts.json", "w")
@@ -129,47 +134,40 @@ def generate2in1out() :
 
     output_file.close()
 
-#TODO make this custom to wires
+# Generates the .json file for gates with 1 input and 1 output (aka wires)
 def generate1in1out() :
     for directionOut in directions :# Represents the output wire
-        for i in range(10) :
+        for i in range(5) :
             lookupArrayForFile.append("")
 
-        for directionIn1 in directions :# Represents the first input wire
-            if directionIn1 != directionOut :
-                for directionIn2 in directions : # Represents the second input wire
-                    if directionIn2 != directionOut and directionIn2 != directionIn1 and int(directionIn2) > int(directionIn1) :
-                        
-                        # Prepare programm inputs
-                        gate = "SAMPLE" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
-                        outputWire = directionOut
-                        inputWires = directionIn1 + directionIn2
-                        args = ("./super-tile_layout_generator", "-r", gate, inputWires, outputWire)
+        for directionIn in directions :# Represents the input wire
+            if directionIn != directionOut :
+                # Prepare programm inputs
+                gate = "WIRE"
+                args = ("./super-tile_layout_generator", "-r", gate, directionIn, directionOut)
 
-                        # Execute programm and read output
-                        executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
-                        executed_binary.wait()
-                        output = executed_binary.stdout.read().decode().split(", ")
-                        supertileWires = ["", "", "", "", "", ""]
-                        supertileWires[0:6] = output[1:7]
+                # Execute programm and read output
+                executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
+                executed_binary.wait()
+                output = executed_binary.stdout.read().decode().split(", ")
 
-                        # Write array entry
-                        arrayEntry = '\"' + directionOut + directionIn1 + directionIn2 + '\": ['
+                # Write array entry
+                arrayEntry = '\"' + directionOut + directionIn + '\": ['
 
-                        arrayEntry += '\"' + wireLookup(supertileWires[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
-                        for wire in supertileWires[1:6] :
-                            arrayEntry += ', \"' + wireLookup(wire) + '\"'
-                        
-                        arrayEntry += ']'
+                arrayEntry += '\"' + wireLookup(output[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
+                for wire in output[1:7] :
+                    arrayEntry += ', \"' + wireLookup(wire) + '\"'
+                
+                arrayEntry += ']'
 
-                        # Add array entry
-                        lookupArrayForFile[perfectHashFunction(int(directionOut), int(directionIn1), int(directionIn2))] = arrayEntry
+                # Add array entry
+                lookupArrayForFile[perfectHashFunction1in1out(int(directionOut), int(directionIn))] = arrayEntry
 
     # Write array to file
-    output_file = open(r"1in1out_supertile_layouts.json", "w")
+    output_file = open(r"1in1out_super-tile_layouts.json", "w")
 
     output_file.write('{\n')
-    output_file.write('    \"1in1out_supertile_layouts\": [\n')
+    output_file.write('    \"1in1out_super-tile_layouts\": [\n')
 
     output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
     for entry in lookupArrayForFile[1:60] :
