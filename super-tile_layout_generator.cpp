@@ -1379,8 +1379,36 @@ void setNormalisedNumbers(int* positions, int positionsSize, char* normalised) {
     }
 }
 
+/** The core naming system is defined such that the numbers 1-4 represent to following core input/output layouts:
+*    \ /      \ /      \          /
+* 1:  O    2:  O    3:  O    4:  O
+*    /          \      / \      / \
+*/
 void printReducedLayout(superTile* layout) {
-    printf("%s, %s, %s, %s, %s, %s, %s", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
+    if (layout->core->outPositionsSize > 1) {
+        printf("Core orientation output still has to be implemented for coregates with more then one output");
+        printf("%s, %s, %s, %s, %s, %s, %s", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
+    } else {
+        std::string coreName = layout->core->name;
+        switch (layout->core->outPositions[0]) {
+            case 3:
+                coreName += "1";
+                break;
+            case 2:
+                coreName += "2";
+                break;
+            case 5:
+                coreName += "3";
+                break;
+            case 0:
+                coreName += "4";
+                break;
+            default:
+                coreName += "-Unknown core orientation";
+                break;
+        }
+        printf("%s, %s, %s, %s, %s, %s, %s", coreName.c_str(), layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
+    }
 }
 
 void freeGate(gate* toFree) {

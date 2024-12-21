@@ -1,7 +1,6 @@
 import subprocess
 import sys
 
-lookupArrayForFile = []
 directions = ["0", "1", "2", "3", "4", "5"]
 
 # Transforms the wire naming system used in "super-tile_layout_generator" to the one used in fiction
@@ -87,6 +86,7 @@ def perfectHashFunction1in1out(A, B) :
 
 # Generates the .json file for gates with 2 inputs and 1 output
 def generate2in1out() :
+    lookupArrayForFile = []
     for directionOut in directions :# Represents the output wire
         for i in range(10) :
             lookupArrayForFile.append("")
@@ -136,6 +136,7 @@ def generate2in1out() :
 
 # Generates the .json file for gates with 1 input and 1 output (aka wires)
 def generate1in1out() :
+    lookupArrayForFile = []
     for directionOut in directions :# Represents the output wire
         for i in range(5) :
             lookupArrayForFile.append("")
@@ -179,8 +180,11 @@ def generate1in1out() :
     output_file.close()
 
 # Read what should be generated
-response = input("Which .json file should be generated? Type the respective number to choose from the following options:\n    1: 1 input, 1 output gates, aka a wire    2: 2 inputs, 1 output gates")
+response = input("Which .json file should be generated? Type the respective number to choose from the following options:\n    a: Every following option at once    1: 1 input, 1 output gates, aka a wire    2: 2 inputs, 1 output gates\n")
 match response :
+    case "a" :
+        generate1in1out()
+        generate2in1out()
     case "1" :
         generate1in1out()
     case "2" :
