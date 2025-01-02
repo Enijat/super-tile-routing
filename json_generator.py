@@ -1,6 +1,20 @@
 import subprocess
 import sys
 
+# Directions are based on this layout
+#           ˍ---¯¯¯---ˍ ˍ---¯¯¯---ˍ
+#          |           |           |
+#          |    (5)    |    (0)    |
+#          |           |           |
+#     ˍ---¯ ¯---ˍ ˍ---¯ ¯---ˍ ˍ---¯ ¯---ˍ
+#    |           |           |           |
+#    |    (4)    |   (Core)  |    (1)    |
+#    |           |           |           |
+#     ¯---ˍ ˍ---¯ ¯---ˍ ˍ---¯ ¯---ˍ ˍ---¯
+#          |           |           |
+#          |    (3)    |    (2)    |
+#          |           |           |
+#           ¯---ˍˍˍ---¯ ¯---ˍˍˍ---¯
 directions = ["0", "1", "2", "3", "4", "5"]
 
 # Transforms the wire naming system used in "super-tile_layout_generator" to the one used in fiction
@@ -10,61 +24,61 @@ def wireLookup(wireName) :
             return "empty"
         # Standard wires:
         case "wire01" :
-            return "0null"
+            return "wire01"
         case "wire02" :
-            return "1null"
+            return "wire02"
         case "wire03" :
-            return "2null"
+            return "wire03"
         case "wire04" :
-            return "3null"
+            return "wire04"
         case "wire05" :
-            return "4null"
+            return "wire05"
         case "wire12" :
-            return "5null"
+            return "wire12"
         case "wire13" :
-            return "6null"
+            return "wire13"
         case "wire14" :
-            return "7null"
+            return "wire14"
         case "wire15" :
-            return "8null"
+            return "wire15"
         case "wire23" :
-            return "9null"
+            return "wire23"
         case "wire24" :
-            return "10null"
+            return "wire24"
         case "wire25" :
-            return "12null"
+            return "wire25"
         case "wire34" :
-            return "13null"
+            return "wire34"
         case "wire35" :
-            return "14null"
+            return "wire35"
         case "wire45" :
-            return "15null"
+            return "wire45"
         # Double wires with on straight wire
         case "wire14_23" :
-            return "16null"
+            return "wire14_23"
         case "wire25_34" :
-            return "17null"
+            return "wire25_34"
         case "wire03_45" :
-            return "18null"
+            return "wire03_45"
         case "wire14_05" :
-            return "19null"
+            return "wire14_05"
         case "wire25_01" :
-            return "20null"
+            return "wire25_01"
         case "wire03_12" :
-            return "21null"
+            return "wire03_12"
         # Double wires with both wires bend
         case "wire12_34" :
-            return "22null"
+            return "wire12_34"
         case "wire23_45" :
-            return "23null"
+            return "wire23_45"
         case "wire34_05" :
-            return "24null"
+            return "wire34_05"
         case "wire45_01" :
-            return "25null"
+            return "wire45_01"
         case "wire05_12" :
-            return "26null"
+            return "wire05_12"
         case "wire01_23" :
-            return "27null"
+            return "wire01_23"
         # Default case (Error)
         case _:
             return "ERROR_wire-not-found"
@@ -75,10 +89,10 @@ def coreLookup(coreName) :
 
 # This function is perfect only by definition, but not by execution, meaning that there is good chance there is a simpler function with the same result
 def perfectHashFunction2in1out(A, B, C) :
-    b = (B - A) % 6
+    b = (B - A) % 6 # get B and C into the same 1-5 range for all A
     c = (C - A) % 6
-    basicResult = 2*(b + c) + abs(b - c)
-    reducedResult = ((((basicResult - 8) % 13) - 4) % 11) - 1 # reduces the 10 different numbers in basicResult to the range 0 - 9
+    basicResult = 2*(b + c) + abs(b - c) # get 10 different numbers out of b and c
+    reducedResult = ((((basicResult - 8) % 13) - 4) % 11) - 1 # reduces the 10 different numbers to the range 0 - 9
     return 10 * A + reducedResult
 
 def perfectHashFunction1in1out(A, B) :
@@ -100,7 +114,7 @@ def generate2in1out() :
                         gate = "SAMPLE" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
                         outputWire = directionOut
                         inputWires = directionIn1 + directionIn2
-                        args = ("./super-tile_layout_generator", "-r", gate, inputWires, outputWire)
+                        args = ("./supertile_layout_generator", "-r", gate, inputWires, outputWire)
 
                         # Execute programm and read output
                         executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -120,10 +134,10 @@ def generate2in1out() :
                         lookupArrayForFile[perfectHashFunction2in1out(int(directionOut), int(directionIn1), int(directionIn2))] = arrayEntry
 
     # Write array to file
-    output_file = open(r"2in1out_super-tile_layouts.json", "w")
+    output_file = open(r"2in1out_supertile_layouts.json", "w")
 
     output_file.write('{\n')
-    output_file.write('    \"2in1out_super-tile_layouts\": [\n')
+    output_file.write('    \"2in1out_supertile_layouts\": [\n')
 
     output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
     for entry in lookupArrayForFile[1:60] :
@@ -145,7 +159,7 @@ def generate1in1out() :
             if directionIn != directionOut :
                 # Prepare programm inputs
                 gate = "WIRE"
-                args = ("./super-tile_layout_generator", "-r", gate, directionIn, directionOut)
+                args = ("./supertile_layout_generator", "-r", gate, directionIn, directionOut)
 
                 # Execute programm and read output
                 executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -165,10 +179,10 @@ def generate1in1out() :
                 lookupArrayForFile[perfectHashFunction1in1out(int(directionOut), int(directionIn))] = arrayEntry
 
     # Write array to file
-    output_file = open(r"1in1out_super-tile_layouts.json", "w")
+    output_file = open(r"1in1out_supertile_layouts.json", "w")
 
     output_file.write('{\n')
-    output_file.write('    \"1in1out_super-tile_layouts\": [\n')
+    output_file.write('    \"1in1out_supertile_layouts\": [\n')
 
     output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
     for entry in lookupArrayForFile[1:60] :
