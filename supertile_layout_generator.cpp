@@ -92,6 +92,7 @@ superTile* solver2in1out(int*, int*, char*, bool);
     bool getWireTile(int*, int, gate*);
     bool giveWireGateName(wire, gate*);
 superTile* solver1in1out(int*, int*, char*, bool);
+superTile* solver1in0out(int*, bool);
 void printLayout(superTile*);
     void setNormalisedString(const char*, char*);
     void setNormalisedNumbers(int*, int, char*);
@@ -206,9 +207,19 @@ int main(int argc, char** argv)
             free(outPositions);
             return EXIT_FAILURE;
         }
-    } else if (inPositionsSize == 1 && outPositionsSize == 1) {
+    } else if (inPositionsSize == 1 && outPositionsSize == 1 && strcmp(coreName, "INPUT")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver1in1out(inPositions, outPositions, coreName, printTheWirePaths);
+        clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
+
+        if (finishedLayout == NULL) {
+            free(inPositions);
+            free(outPositions);
+            return EXIT_FAILURE;
+        }
+    } else if (inPositionsSize == 1 && !strcmp(coreName, "INPUT")) {
+        clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
+        finishedLayout = solver1in0out(inPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
 
         if (finishedLayout == NULL) {
@@ -254,7 +265,7 @@ void printLayoutExplanation() {
 
 //TODO change the gate list to lookup from file or move the list to the top and use it here.
 void printCoreGateList() {
-    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n");
+    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT (if this core is chosen, the given output is ignored)\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
@@ -862,6 +873,89 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
     return super;
 }
 
+superTile* solver1in0out(int* inPosition, bool printTheWirePaths) {
+    wireType** outerTiles = (wireType**) malloc(sizeof(wireType*)*6);
+    for (int x = 0; x < 6; x++) {
+        outerTiles[x] = (wireType*) malloc(sizeof(wireType)*3);
+        for (int y = 0; y < 3; y++) {
+            outerTiles[x][y] = NaW;
+        }
+    }
+
+    gate* core;
+
+    //Get best fitting core rotation
+    core = (gate*) malloc(sizeof(gate));
+    core->outPositions = (int*) malloc(sizeof(int)*1);
+    core->outPositionsSize = 1;
+    core->inPositions = (int*) malloc(sizeof(int)*1);
+    core->inPositionsSize = 1;
+
+    //core->name = coreName;
+    int* inOutPositions = (int*) malloc(sizeof(int)*4);
+    inOutPositions[0] = inPosition[0];
+    inOutPositions[1] = (inPosition[0] + 3) % 6; //to trick the method into giving us a "straight" wire
+    inOutPositions[2] = 42;
+    
+    getWireTile(inOutPositions, 5, core);
+    free(inOutPositions);
+
+    //Connect input
+    outerTiles[core->inPositions[0]][0] = in1;
+    outerTiles[inPosition[0]][2] = in1;
+
+    superTile* super = (superTile*) malloc(sizeof(superTile));
+    super->core = core;
+    super->wires = (gate**) malloc(sizeof(gate*)*6);
+
+    //Get the wire-gates which are required on the outside
+    for (int currentGate = 0; currentGate < 6; currentGate++) {
+        int* currentWirePositions = getWireTileConnections(outerTiles, currentGate);
+        if (currentWirePositions == NULL) {
+            for (int x = 0; x < 6; x++) {
+                free(outerTiles[x]);
+            }
+            free(outerTiles);
+            for (int x = 0; x < currentGate; x++) {
+                free(super->wires[x]);
+            }
+            free(super);
+            return NULL;
+        }
+
+        gate* wireGate = (gate*) malloc(sizeof(gate));
+        if(getWireTile(currentWirePositions, currentGate, wireGate)){
+            printf("A wire gate is required that is not yet implemented.\n");
+            for (int x = 0; x < 6; x++) {
+                free(outerTiles[x]);
+            }
+            free(outerTiles);
+            for (int x = 0; x < currentGate; x++) {
+                free(super->wires[x]);
+            }
+            free(super);
+            free(wireGate);
+            free(currentWirePositions);
+            return NULL;
+        }
+        free(currentWirePositions);
+        //TODO combine the methods getWireTile() and giveWireGateName() (Besser gesagt man verschiebt giveWireGateName() in getWireTile()), there is no reason they should be seperate
+
+        super->wires[currentGate] = wireGate;
+    }
+    
+    if (printTheWirePaths) {
+        printWirePaths(outerTiles, core); // can be used for debugging
+    }
+    
+    for (int x = 0; x < 6; x++) {
+        free(outerTiles[x]);
+    }
+    free(outerTiles);
+
+    return super;
+}
+
 //TODO Check truthtable and maybe even add it here for better understanding, or use it in the code ?!
 //The coreOutput information is required so that the path doesn't cross it in edge-case-inputs like "./main SAMPLE 02 1"
 bool goClockwise(int start, int end, int otherStart) {
@@ -1390,22 +1484,24 @@ void printReducedLayout(superTile* layout) {
         printf("%s, %s, %s, %s, %s, %s, %s", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
     } else {
         std::string coreName = layout->core->name;
-        switch (layout->core->outPositions[0]) {
-            case 3:
-                coreName += "1";
-                break;
-            case 2:
-                coreName += "2";
-                break;
-            case 5:
-                coreName += "3";
-                break;
-            case 0:
-                coreName += "4";
-                break;
-            default:
-                coreName += "-Unknown core orientation";
-                break;
+        if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) {
+            switch (layout->core->outPositions[0]) {
+                case 3:
+                    coreName += "_3";
+                    break;
+                case 2:
+                    coreName += "_2";
+                    break;
+                case 5:
+                    coreName += "_5";
+                    break;
+                case 0:
+                    coreName += "_0";
+                    break;
+                default:
+                    coreName += "_Unknown core orientation";
+                    break;
+            }
         }
         printf("%s, %s, %s, %s, %s, %s, %s", coreName.c_str(), layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
     }
