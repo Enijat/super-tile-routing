@@ -21,64 +21,64 @@ directions = ["0", "1", "2", "3", "4", "5"]
 def wireLookup(wireName) :
     match wireName :
         case "empty" :
-            return "empty"
+            return ""
         # Standard wires:
         case "wire01" :
-            return "wire01"
+            return "NORTH_EAST_EAST_WIRE"
         case "wire02" :
-            return "wire02"
+            return "NORTH_EAST_SOUTH_EAST_WIRE"
         case "wire03" :
-            return "wire03"
+            return "NORTH_EAST_SOUTH_WEST_WIRE"
         case "wire04" :
-            return "wire04"
+            return "NORTH_EAST_WEST_WIRE"
         case "wire05" :
-            return "wire05"
+            return "NORTH_EAST_NORTH_WEST_WIRE"
         case "wire12" :
-            return "wire12"
+            return "EAST_SOUTH_EAST_WIRE"
         case "wire13" :
-            return "wire13"
+            return "EAST_SOUTH_WEST_WIRE"
         case "wire14" :
-            return "wire14"
+            return "EAST_WEST_WIRE"
         case "wire15" :
-            return "wire15"
+            return "EAST_NORTH_WEST_WIRE"
         case "wire23" :
-            return "wire23"
+            return "SOUTH_EAST_SOUTH_WEST_WIRE"
         case "wire24" :
-            return "wire24"
+            return "SOUTH_EAST_WEST_WIRE"
         case "wire25" :
-            return "wire25"
+            return "SOUTH_EAST_NORTH_WEST_WIRE"
         case "wire34" :
-            return "wire34"
+            return "SOUTH_WEST_WEST_WIRE"
         case "wire35" :
-            return "wire35"
+            return "SOUTH_WEST_NORTH_WEST_WIRE"
         case "wire45" :
-            return "wire45"
+            return "WEST_NORTH_WEST_WIRE"
         # Double wires with on straight wire
         case "wire14_23" :
-            return "wire14_23"
+            return "EAST_WEST_AND_SOUTH_EAST_SOUTH_WEST_WIRE"
         case "wire25_34" :
-            return "wire25_34"
+            return "SOUTH_EAST_NORTH_WEST_AND_SOUTH_WEST_WEST_WIRE"
         case "wire03_45" :
-            return "wire03_45"
+            return "NORTH_EAST_SOUTH_WEST_AND_WEST_NORTH_WEST_WIRE"
         case "wire14_05" :
-            return "wire14_05"
+            return "EAST_WEST_AND_NORTH_EAST_NORTH_WEST_WIRE"
         case "wire25_01" :
-            return "wire25_01"
+            return "SOUTH_EST_NORTH_WEST_AND_NORTH_EAST_EAST_WIRE"
         case "wire03_12" :
-            return "wire03_12"
+            return "NORTH_EAST_SOUTH_WEST_AND_EAST_SOUTH_EAST_WIRE"
         # Double wires with both wires bend
         case "wire12_34" :
-            return "wire12_34"
+            return "EAST_SOUTH_EAST_AND_SOUTH_WEST_WEST_WIRE"
         case "wire23_45" :
-            return "wire23_45"
+            return "SOUTH_EAST_SOUTH_WEST_AND_WEST_NORTH_WEST_WIRE"
         case "wire34_05" :
-            return "wire34_05"
+            return "SOUTH_WEST_WEST_AND_NORTH_EAST_NORTH_WEST_WIRE"
         case "wire45_01" :
-            return "wire45_01"
+            return "WEST_NORTH_WEST_AND_NORTH_EAST_EAST_WIRE"
         case "wire05_12" :
-            return "wire05_12"
+            return "NORTH_EAST_NORTH_WEST_AND_EAST_SOUTH_EAST_WIRE"
         case "wire01_23" :
-            return "wire01_23"
+            return "NORTH_EAST_EAST_AND_SOUTH_EAST_SOUTH_WEST_WIRE"
         # Default case (Error)
         case _:
             return "ERROR_wire-not-found"
@@ -95,7 +95,7 @@ def coreLookup(coreName) :
         case "5" :
             return "NORTH_WEST"
         case _:
-            return "Unknown-core-orientation"
+            return "ERROR_unknown-core-orientation"
 
 # This function is perfect only by definition, but not by execution, meaning that there is good chance there is a simpler function with the same result
 def perfectHashFunction2in1out(A, B, C) :
