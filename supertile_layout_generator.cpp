@@ -86,12 +86,13 @@ int* extractPositions(char*, int);
 superTile* solver2in1out(int*, int*, char*, bool);
     gate* getYCore(int*, int*);
     gate* getYCoreUpright(int*, int*);
-    bool goClockwise(int, int, int);
+    bool specialGoClockwise(int, int, int);
     int mod(int, int);
     int* getWireTileConnections(wireType**, int);
     bool getWireTile(int*, int, gate*);
     bool giveWireGateName(wire, gate*);
 superTile* solver1in1out(int*, int*, char*, bool);
+    bool goClockwise(int, int, int);
     gate* getICore(int*, int*);
 superTile* solver1in0out(int*, bool);
 void printLayout(superTile*);
@@ -318,7 +319,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
         //Connect output
         outerTiles[core->outPositions[0]][0] = out1;
         outerTiles[outPosition[0]][2] = out1;
-        bool clockwiseOutput = goClockwise(core->outPositions[0], outPosition[0], (core->outPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
+        bool clockwiseOutput = specialGoClockwise(core->outPositions[0], outPosition[0], (core->outPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
         if (core->outPositions[0] != outPosition[0]) {
            int currentPos = core->outPositions[0];
            if (clockwiseOutput) {
@@ -373,7 +374,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
         outerTiles[superTileIns[0]][2] = in1;
         if (coreIns[0] != superTileIns[0]) {
             int currentPos = coreIns[0];
-            if (goClockwise(coreIns[0], superTileIns[0], coreIns[1])) {
+            if (specialGoClockwise(coreIns[0], superTileIns[0], coreIns[1])) {
                 while (currentPos != superTileIns[0]) {
                     outerTiles[currentPos][1] = in1;
                     currentPos = (currentPos + 1) % 6;
@@ -390,7 +391,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
         outerTiles[superTileIns[1]][2] = in2;
         if (coreIns[1] != superTileIns[1]) {
             int currentPos = coreIns[1];
-            if (goClockwise(coreIns[1], superTileIns[1], coreIns[0])) {
+            if (specialGoClockwise(coreIns[1], superTileIns[1], coreIns[0])) {
                 while (currentPos != superTileIns[1]) {
                     outerTiles[currentPos][1] = in2;
                     currentPos = (currentPos + 1) % 6;
@@ -412,7 +413,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
         //Connect output
         outerTiles[core->outPositions[0]][0] = out1;
         outerTiles[outPosition[0]][2] = out1;
-        bool clockwiseOutput = goClockwise(core->outPositions[0], outPosition[0], (core->outPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
+        bool clockwiseOutput = specialGoClockwise(core->outPositions[0], outPosition[0], (core->outPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
         if (core->outPositions[0] != outPosition[0]) {
            int currentPos = core->outPositions[0];
            if (clockwiseOutput) {
@@ -467,7 +468,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
         outerTiles[superTileIns[0]][2] = in1;
         if (coreIns[0] != superTileIns[0]) {
             int currentPos = coreIns[0];
-            if (goClockwise(coreIns[0], superTileIns[0], coreIns[1])) {
+            if (specialGoClockwise(coreIns[0], superTileIns[0], coreIns[1])) {
                 while (currentPos != superTileIns[0]) {
                     outerTiles[currentPos][1] = in1;
                     currentPos = (currentPos + 1) % 6;
@@ -484,7 +485,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
         outerTiles[superTileIns[1]][2] = in2;
         if (coreIns[1] != superTileIns[1]) {
             int currentPos = coreIns[1];
-            if (goClockwise(coreIns[1], superTileIns[1], coreIns[0])) {
+            if (specialGoClockwise(coreIns[1], superTileIns[1], coreIns[0])) {
                 while (currentPos != superTileIns[1]) {
                     outerTiles[currentPos][1] = in2;
                     currentPos = (currentPos + 1) % 6;
@@ -823,7 +824,7 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
         //Connect ouput
         outerTiles[core->outPositions[0]][0] = out1;
         outerTiles[outPosition[0]][2] = out1;
-        bool clockwiseOutput = goClockwise(core->outPositions[0], outPosition[0], (core->outPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
+        bool clockwiseOutput = goClockwise(core->outPositions[0], outPosition[0], core->inPositions[0]);
         if (core->outPositions[0] != outPosition[0]) {
            int currentPos = core->outPositions[0];
            if (clockwiseOutput) {
@@ -842,7 +843,7 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
         //Connect input
         outerTiles[core->inPositions[0]][0] = in1;
         outerTiles[inPosition[0]][2] = in1;
-        clockwiseOutput = goClockwise(core->inPositions[0], inPosition[0], (core->inPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
+        clockwiseOutput = goClockwise(core->inPositions[0], inPosition[0], core->outPositions[0]);
         if (core->inPositions[0] != inPosition[0]) {
            int currentPos = core->inPositions[0];
            if (clockwiseOutput) {
@@ -1040,14 +1041,46 @@ superTile* solver1in0out(int* inPosition, bool printTheWirePaths) {
     return super;
 }
 
-//TODO Check truthtable and maybe even add it here for better understanding, or use it in the code ?!
-//The coreOutput information is required so that the path doesn't cross it in edge-case-inputs like "./main SAMPLE 02 1"
-bool goClockwise(int start, int end, int otherStart) {
+bool goClockwise(int start, int end, int blocker) {
     //start == end should never happen, method is not constructed for that. Maybe fix that? But shouldn't be neccessary
+    //blocker == start or blocker == end is also not respected
+
+    //Normalise all values by shifting the start to 0
+    int shifted_start = 0;
+    int shifted_end = mod(end - start, 6);
+    int shifted_blocker = mod(blocker - start, 6);
+
+    if (shifted_end < 3) {
+        if (shifted_blocker == 1) {
+            return false;
+        } else {
+            return true;
+        }
+    } else if (shifted_end == 3) {
+        if (shifted_blocker == 1 || shifted_blocker == 2) {
+            return false;
+        } else {
+            return true;
+        }
+    } else { // shifted_end > 3
+        if (shifted_blocker == 5) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+//This is a copy of the old version of this method which was specalised for the original Y-shaped core gates, and for some reason can't be replaced with the new one
+//The coreOutput information is required so that the path doesn't cross it in edge-case-inputs like "./main SAMPLE 02 1"
+//TODO Check truthtable and maybe even add it here for better understanding, or use it in the code ?!
+bool specialGoClockwise(int start, int end, int otherStart) {
+    //start == end should never happen, method is not constructed for that. Maybe fix that? But shouldn't be neccessary
+    //otherStart == start or otherStart == end is also not respected
     if (start > end) {
         if (start - end > 3) {
             return true;
-        } else if (start - end == 3 && otherStart != (start + 1) % 6) { //This was written for classical Y shaped gates, this can either be optimized for them or the whole Method can be generalized so that it works with other gates (then you have to check "(start + 2) % 6" also)
+        } else if (start - end == 3 && otherStart != (start + 1) % 6) { //This was written for classical Y shaped gates
             return true;
         } else {
             return false;
@@ -1055,7 +1088,7 @@ bool goClockwise(int start, int end, int otherStart) {
     } else {
         if (end - start > 3) {
             return false;
-        } else if (end - start == 3 && otherStart == (start + 1) % 6) { //This was written for classical Y shaped gates, this can either be optimized for them or the whole Method can be generalized so that it works with other gates (then you have to check "(start + 2) % 6" also)
+        } else if (end - start == 3 && otherStart == (start + 1) % 6) { //This was written for classical Y shaped gates
             return false;
         } else {
             return true;
