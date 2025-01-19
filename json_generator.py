@@ -238,10 +238,10 @@ def generate1in0out() :
             lookupArrayForFile[perfectHashFunction1in0out(int(directionIn))] = arrayEntry
 
     # Write array to file
-    output_file = open(r"1in0out_supertile_layouts.json", "w")
+    output_file = open(r"0in1out_supertile_layouts.json", "w")
 
     output_file.write('{\n')
-    output_file.write('    \"1in0out_supertile_layouts\": [\n')
+    output_file.write('    \"0in1out_supertile_layouts\": [\n')
 
     output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
     for entry in lookupArrayForFile[1:6] :
@@ -253,7 +253,7 @@ def generate1in0out() :
     output_file.close()
 
 # Read what should be generated
-response = input("Which .json file should be generated? Type the respective number to choose from the following options:\n    a: Every following option at once    1: 1 input, 1 output gates, aka a wire    2: 2 inputs, 1 output gates   3: 1 input, no output gates, aka input\n")
+response = input("Which .json file should be generated? Type the respective number to choose from the following options:\n    a: Every following option at once    1: 1 input, 1 output gates, aka a wire    2: 2 inputs, 1 output gates   3: no input, 1 output gate, aka input\n")
 match response :
     case "a" :
         generate1in1out()
