@@ -167,7 +167,7 @@ def generate2in1out() :
     output_file.close()
 
 # Generates the .json file for gates with 1 input and 1 output (aka wires)
-def generate1in1out() :
+def generate1in1outWIRE() :
     lookupArrayForFile = []
     for i in range(15) :
             lookupArrayForFile.append("")
@@ -196,10 +196,53 @@ def generate1in1out() :
                 lookupArrayForFile[perfectHashFunction1in1out(int(directionOut), int(directionIn))] = arrayEntry
     
     # Write array to file
-    output_file = open(r"1in1out_supertile_layouts.json", "w")
+    output_file = open(r"1in1outWIRE_supertile_layouts.json", "w")
 
     output_file.write('{\n')
-    output_file.write('    \"1in1out_supertile_layouts\": [\n')
+    output_file.write('    \"1in1outWIRE_supertile_layouts\": [\n')
+
+    output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
+    for entry in lookupArrayForFile[1:30] :
+        output_file.write(',\n        {\n            ' + entry + '\n        }')
+
+    output_file.write('\n    ]\n')
+    output_file.write('}\n')
+
+    output_file.close()
+
+def generate1in1outINVERTER() :
+    lookupArrayForFile = []
+    for i in range(15) :
+            lookupArrayForFile.append("")
+    for directionOut in directions :# Represents the output wire
+        for directionIn in directions :# Represents the input wire
+            if directionIn > directionOut :
+                # Prepare programm inputs
+                gate = "INVERTER"
+                args = ("./supertile_layout_generator", "-r", gate, directionIn, directionOut)
+
+                # Execute programm and read output
+                executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
+                executed_binary.wait()
+                output = executed_binary.stdout.read().decode().split(", ")
+
+                # Write array entry
+                arrayEntry = '\"' + directionOut + directionIn + '\": ['
+
+                arrayEntry += '\"' + coreLookup(output[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
+                for wire in output[1:7] :
+                    arrayEntry += ', \"' + wireLookup(wire) + '\"'
+                
+                arrayEntry += ']'
+
+                # Add array entry
+                lookupArrayForFile[perfectHashFunction1in1out(int(directionOut), int(directionIn))] = arrayEntry
+    
+    # Write array to file
+    output_file = open(r"1in1outINVERTER_supertile_layouts.json", "w")
+
+    output_file.write('{\n')
+    output_file.write('    \"1in1outINVERTER_supertile_layouts\": [\n')
 
     output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
     for entry in lookupArrayForFile[1:30] :
@@ -253,17 +296,20 @@ def generate1in0out() :
     output_file.close()
 
 # Read what should be generated
-response = input("Which .json file should be generated? Type the respective number to choose from the following options:\n    a: Every following option at once    1: 1 input, 1 output gates, aka a wire    2: 2 inputs, 1 output gates   3: no input, 1 output gate, aka input\n")
+response = input("Which .json file should be generated? Type the respective number to choose from the following options:\n    a: Every following option at once    1: 1 input, 1 output gates, (wire)    2: 1 input, 1 output gates, (inverter)    3: 2 inputs, 1 output gates   4: no input, 1 output gate, aka input\n")
 match response :
     case "a" :
-        generate1in1out()
+        generate1in1outWIRE()
+        generate1in1outINVERTER()
         generate2in1out()
         generate1in0out()
     case "1" :
-        generate1in1out()
+        generate1in1outWIRE()
     case "2" :
-        generate2in1out()
+        generate1in1outINVERTER()
     case "3" :
+        generate2in1out()
+    case "4" :
         generate1in0out()
     case _ :
         print("Invalid response")

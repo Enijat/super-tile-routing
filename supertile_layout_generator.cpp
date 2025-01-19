@@ -92,6 +92,7 @@ superTile* solver2in1out(int*, int*, char*, bool);
     bool getWireTile(int*, int, gate*);
     bool giveWireGateName(wire, gate*);
 superTile* solver1in1out(int*, int*, char*, bool);
+    gate* getICore(int*, int*);
 superTile* solver1in0out(int*, bool);
 void printLayout(superTile*);
     void setNormalisedString(const char*, char*);
@@ -265,7 +266,7 @@ void printLayoutExplanation() {
 
 //TODO change the gate list to lookup from file or move the list to the top and use it here.
 void printCoreGateList() {
-    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT (if this core is chosen, the given output is ignored)\n");
+    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT (if this core is chosen, the given output is ignored)\n    INVERTER\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
@@ -814,12 +815,52 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
         //Connect input
         outerTiles[core->inPositions[0]][0] = in1;
         outerTiles[inPosition[0]][2] = in1;
+    } else if (!strcmp(coreName, "INVERTER")) {
+        //Get best fitting core rotation
+        core = getICore(inPosition, outPosition);
+        core->name = coreName;
+
+        //Connect ouput
+        outerTiles[core->outPositions[0]][0] = out1;
+        outerTiles[outPosition[0]][2] = out1;
+        bool clockwiseOutput = goClockwise(core->outPositions[0], outPosition[0], (core->outPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
+        if (core->outPositions[0] != outPosition[0]) {
+           int currentPos = core->outPositions[0];
+           if (clockwiseOutput) {
+               while (currentPos != outPosition[0]) {
+                   outerTiles[currentPos][1] = out1;
+                   currentPos = (currentPos + 1) % 6;;
+               }
+           } else {
+               do {
+                   currentPos = mod((currentPos - 1), 6);
+                   outerTiles[currentPos][1] = out1;
+               } while (currentPos != outPosition[0]);
+           }
+        }
+
+        //Connect input
+        outerTiles[core->inPositions[0]][0] = in1;
+        outerTiles[inPosition[0]][2] = in1;
+        clockwiseOutput = goClockwise(core->inPositions[0], inPosition[0], (core->inPositions[0] + 1) % 6); //TODO eigene goClockwise methode schreiben, sonst muss man 'otherStart' wie hier mit etwas füllen das eigentlich algorithmisch unnötig ist weil der Output nie gegenüber liegen sollte
+        if (core->inPositions[0] != inPosition[0]) {
+           int currentPos = core->inPositions[0];
+           if (clockwiseOutput) {
+               while (currentPos != inPosition[0]) {
+                   outerTiles[currentPos][1] = in1;
+                   currentPos = (currentPos + 1) % 6;;
+               }
+           } else {
+               do {
+                   currentPos = mod((currentPos - 1), 6);
+                   outerTiles[currentPos][1] = in1;
+               } while (currentPos != inPosition[0]);
+           }
+        }
     } else {
         printf("The given core name has not been found or a gate with this name is not available with 1 inputs and 1 output.\n");
         return NULL;
     }
-
-        
 
     superTile* super = (superTile*) malloc(sizeof(superTile));
     super->core = core;
@@ -871,6 +912,49 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
     free(outerTiles);
 
     return super;
+}
+
+gate* getICore(int* inPositions, int* outPosition) {
+    // This is just copied and modified code from getYCore(), could be reworked
+    //TODO optimize by grouping the core position setting together, and maybe creating a truth table OR decision tree and have a switch statement, this may be the ugliest code I have ever written
+    //TODO other/additional optimization could be to sort the in/outPositions bevorhand to reduce the ammount of if-statements
+    gate* core = (gate*) malloc(sizeof(gate));
+    core->outPositions = (int*) malloc(sizeof(int)*1);
+    core->outPositionsSize = 1;
+    core->inPositions = (int*) malloc(sizeof(int)*1);
+    core->inPositionsSize = 1;
+
+    if (outPosition[0] == 0) {
+        core->outPositions[0] = 0;
+        core->inPositions[0] = 2;
+    } else if(outPosition[0] == 1) {
+        if (inPositions[0] == 0 || inPositions[0] == 5) {
+            core->outPositions[0] = 2;
+            core->inPositions[0] = 0;
+        } else {
+            core->outPositions[0] = 0;
+            core->inPositions[0] = 2;
+        }
+    } else if (outPosition[0] == 2) {
+        core->outPositions[0] = 2;
+        core->inPositions[0] = 0;
+    } else if (outPosition[0] == 3) {
+        core->outPositions[0] = 3;
+        core->inPositions[0] = 5;
+    } else if (outPosition[0] == 4) {
+        if (inPositions[0] == 0 || inPositions[0] == 5) {
+            core->outPositions[0] = 3;
+            core->inPositions[0] = 5;
+        } else {
+            core->outPositions[0] = 5;
+            core->inPositions[0] = 3;
+        }
+    } else { // outPosition[0] == 5
+        core->outPositions[0] = 5;
+        core->inPositions[0] = 3;
+    }
+
+    return core;
 }
 
 superTile* solver1in0out(int* inPosition, bool printTheWirePaths) {
@@ -1484,7 +1568,7 @@ void printReducedLayout(superTile* layout) {
         printf("%s, %s, %s, %s, %s, %s, %s", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
     } else {
         std::string coreName = layout->core->name;
-        if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) {
+        if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) { // Used to identify the core gates based on their output direction, not required for wires since they are specified already
             switch (layout->core->outPositions[0]) {
                 case 3:
                     coreName += "_3";
