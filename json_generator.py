@@ -97,18 +97,21 @@ def coreLookup(coreName) :
         case _:
             return "ERROR_unknown-core-orientation"
 
-# This function is perfect only by definition, but not by execution, meaning that there is good chance there is a simpler function with the same result
 def perfectHashFunction2in1out(A, B, C) :
     b = (B - A) % 6 # get B and C into the same 1-5 range for all A
     c = (C - A) % 6
-    basicResult = 2*(b + c) + abs(b - c) # get 10 different numbers out of b and c
-    reducedResult = ((((basicResult - 8) % 13) - 4) % 11) - 1 # reduces the 10 different numbers to the range 0 - 9
+    if (b + c) == 9 :
+        basicResult = 12
+    else :
+        basicResult = 2*(b + c) - abs(b - c) # get 10 different numbers out of b and c
+    reducedResult = basicResult - 5
     return 10 * A + reducedResult
 
 def perfectHashFunction1in1out(A, B) :
-    basicResult = 2*(A + B) - abs(A - B)
     if (A * B) == 2 : # move the basic result 5 to the 12, because 5 is used twice and 12 is a single wide gap
         basicResult = 12
+    else :
+        basicResult = 2*(A + B) - abs(A - B)
     reducedResult = ((basicResult - 15) % 17) - 2
     return reducedResult
 
