@@ -109,11 +109,11 @@ def perfectHashFunction2in1out(A, B, C) :
 
 def perfectHashFunction1in1out(A, B) :
     if (A * B) == 2 : # move the basic result 5 to the 12, because 5 is used twice and 12 is a single wide gap
-        basicResult = 12
+        return 12
+    elif (A + B) == 9:
+        return 0
     else :
-        basicResult = 2*(A + B) - abs(A - B)
-    reducedResult = ((basicResult - 15) % 17) - 2
-    return reducedResult
+        return 2*(A + B) - abs(A - B)
 
 
 def perfectHashFunction1in0out(A) :
