@@ -12,6 +12,7 @@ supertile_layout_generator
 2in1out_supertile_layouts.json
 1in0out_supertile_layouts.json
 0in1out_supertile_layouts.json
+supertile_lookup_tables.hpp
 
 # Prerequisites
 *.d

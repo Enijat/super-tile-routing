@@ -915,7 +915,7 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
     return super;
 }
 
-gate* getICore(int* inPositions, int* outPosition) {
+gate* getICore(int* inPosition, int* outPosition) {
     // This is just copied and modified code from getYCore(), could be reworked
     //TODO optimize by grouping the core position setting together, and maybe creating a truth table OR decision tree and have a switch statement, this may be the ugliest code I have ever written
     //TODO other/additional optimization could be to sort the in/outPositions bevorhand to reduce the ammount of if-statements
@@ -925,34 +925,81 @@ gate* getICore(int* inPositions, int* outPosition) {
     core->inPositions = (int*) malloc(sizeof(int)*1);
     core->inPositionsSize = 1;
 
-    if (outPosition[0] == 0) {
-        core->outPositions[0] = 0;
-        core->inPositions[0] = 2;
-    } else if(outPosition[0] == 1) {
-        if (inPositions[0] == 0 || inPositions[0] == 5) {
-            core->outPositions[0] = 2;
-            core->inPositions[0] = 0;
-        } else {
+    switch (outPosition[0]) {
+        case 0 :
             core->outPositions[0] = 0;
-            core->inPositions[0] = 2;
-        }
-    } else if (outPosition[0] == 2) {
-        core->outPositions[0] = 2;
-        core->inPositions[0] = 0;
-    } else if (outPosition[0] == 3) {
-        core->outPositions[0] = 3;
-        core->inPositions[0] = 5;
-    } else if (outPosition[0] == 4) {
-        if (inPositions[0] == 0 || inPositions[0] == 5) {
+            if (inPosition[0] == 1 || inPosition[0] == 2) {
+                core->inPositions[0] = 2;
+            } else {
+                core->inPositions[0] = 3;
+            }
+            break;
+        case 1 :
+            switch (inPosition[0]) {
+                case 0:
+                    core->inPositions[0] = 0;
+                    core->outPositions[0] = 2;
+                    break;
+                case 2:
+                    core->inPositions[0] = 2;
+                    core->outPositions[0] = 0;
+                    break;
+                case 3:
+                case 4:
+                    core->inPositions[0] = 3;
+                    core->outPositions[0] = 0;
+                    break;
+                case 5:
+                    core->inPositions[0] = 5;
+                    core->outPositions[0] = 2;
+                    break;
+            }
+            break;
+        case 2 :
+            core->outPositions[0] = 2;
+            if (inPosition[0] == 0 || inPosition[0] == 1) {
+                core->inPositions[0] = 0;
+            } else {
+                core->inPositions[0] = 5;
+            }
+            break;
+        case 3 :
             core->outPositions[0] = 3;
-            core->inPositions[0] = 5;
-        } else {
+            if (inPosition[0] == 4 || inPosition[0] == 5) {
+                core->inPositions[0] = 5;
+            } else {
+                core->inPositions[0] = 0;
+            }
+            break;
+        case 4 :
+            switch (inPosition[0]) {
+                case 0:
+                    core->inPositions[0] = 0;
+                    core->outPositions[0] = 3;
+                    break;
+                case 1:
+                case 2:
+                    core->inPositions[0] = 2;
+                    core->outPositions[0] = 5;
+                    break;
+                case 3:
+                    core->inPositions[0] = 3;
+                    core->outPositions[0] = 5;
+                    break;
+                case 5:
+                    core->inPositions[0] = 5;
+                    core->outPositions[0] = 3;
+                    break;
+            }
+            break;
+        case 5 :
             core->outPositions[0] = 5;
-            core->inPositions[0] = 3;
-        }
-    } else { // outPosition[0] == 5
-        core->outPositions[0] = 5;
-        core->inPositions[0] = 3;
+            if (inPosition[0] == 3 || inPosition[0] == 4) {
+                core->inPositions[0] = 3;
+            } else {
+                core->inPositions[0] = 2;
+            }
+            break;
     }
 
     return core;
@@ -1071,7 +1118,7 @@ bool goClockwise(int start, int end, int blocker) {
     }
 }
 
-//This is a copy of the old version of this method which was specalised for the original Y-shaped core gates, and for some reason can't be replaced with the new one
+//This is a copy of the old version of this method which was specalised for the original Y-shaped core gates, and for some reason can't be replaced with the new one (probably to highly specialised)
 //The coreOutput information is required so that the path doesn't cross it in edge-case-inputs like "./main SAMPLE 02 1"
 //TODO Check truthtable and maybe even add it here for better understanding, or use it in the code ?!
 bool specialGoClockwise(int start, int end, int otherStart) {
@@ -1590,18 +1637,48 @@ void setNormalisedNumbers(int* positions, int positionsSize, char* normalised) {
     }
 }
 
-/** The core naming system is defined such that the numbers 1-4 represent to following core input/output layouts:
-*    \ /      \ /      \          /
-* 1:  O    2:  O    3:  O    4:  O
-*    /          \      / \      / \
-*/
 void printReducedLayout(superTile* layout) {
     if (layout->core->outPositionsSize > 1) {
         printf("Core orientation output still has to be implemented for coregates with more then one output");
         printf("%s, %s, %s, %s, %s, %s, %s", layout->core->name, layout->wires[0]->name, layout->wires[1]->name, layout->wires[2]->name, layout->wires[3]->name, layout->wires[4]->name, layout->wires[5]->name);
     } else {
         std::string coreName = layout->core->name;
-        if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) { // Used to identify the core gates based on their output direction, not required for wires since they are specified already
+        if (!strcmp(layout->core->name, "INVERTER")) {
+            switch (layout->core->inPositions[0]) {
+                case 3:
+                    coreName += "_3";
+                    break;
+                case 2:
+                    coreName += "_2";
+                    break;
+                case 5:
+                    coreName += "_5";
+                    break;
+                case 0:
+                    coreName += "_0";
+                    break;
+                default:
+                    coreName += "_Unknown core orientation";
+                    break;
+            }
+            switch (layout->core->outPositions[0]) {
+                case 3:
+                    coreName += "_3";
+                    break;
+                case 2:
+                    coreName += "_2";
+                    break;
+                case 5:
+                    coreName += "_5";
+                    break;
+                case 0:
+                    coreName += "_0";
+                    break;
+                default:
+                    coreName += "_Unknown core orientation";
+                    break;
+            }
+        } else if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) { // Used to identify the core gates based on their output direction, not required for wires since they are specified already
             switch (layout->core->outPositions[0]) {
                 case 3:
                     coreName += "_3";

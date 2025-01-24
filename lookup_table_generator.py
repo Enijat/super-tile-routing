@@ -15,9 +15,9 @@ import sys
 #          |    (3)    |    (2)    |
 #          |           |           |
 #           ¯---ˍˍˍ---¯ ¯---ˍˍˍ---¯
-directions = ["0", "1", "2", "3", "4", "5"]
+DIRECTIONS = ["0", "1", "2", "3", "4", "5"]
 
-seperator = "{{-1,-1}}"
+EMPTY = "{{-1,-1}}"
 
 def wireLookup(wireName: str) :
     match wireName :
@@ -97,7 +97,7 @@ def coreLookup(coreName) :
         case _:
             return ["ERROR_unknown-core-orientation", "ERROR_unknown-core-orientation"]
 
-def perfectHashFunction2in1out(A, B, C) :
+def perfectHashFunction21(A, B, C) :
     b = (B - A) % 6 # get B and C into the same 1-5 range for all A
     c = (C - A) % 6
     if (b + c) == 9 :
@@ -107,15 +107,19 @@ def perfectHashFunction2in1out(A, B, C) :
     reducedResult = basicResult - 5
     return 10 * A + reducedResult
 
-def perfectHashFunction1in1out(A, B) :
-    if (A * B) == 2 : # move the basic result 5 to the 12, because 5 is used twice and 12 is a single wide gap
-        return 12
-    elif (A + B) == 9:
-        return 0
+def perfectHashFunction11(A, B) :
+    if (A > B) :
+        base = 15
     else :
-        return 2*(A + B) - abs(A - B)
+        base = 0
+    if (A * B) == 2 : # move the basic result 5 to the 12, because 5 is used twice and 12 is a single wide gap
+        return 12 + base
+    elif (A + B) == 9:
+        return 0 + base
+    else :
+        return 2*(A + B) - abs(A - B) + base
 
-def perfectHashFunction1in0out(A) :
+def perfectHashFunction10(A) :
     return A
 
 # returns next position (7 represents the core, 8 represents the outside of the supertile)
@@ -273,17 +277,57 @@ def writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPositio
             print("check: " + str(translateDirectionToPosition(currentWirePosition, wireConnections[3])))
             print("ERROR in writeOutputPathToTable")
             break
+    return updatedLookupTablePosition
 
-# Generates the .json file for gates with 2 inputs and 1 output
-def generate2in1out() :
+def writeTableStart(outputFile, totalSize, supertileSize, name) :
+    outputFile.write('\nstatic constexpr const std::array<std::array<std::array<int8_t,2>,' + str(supertileSize) + '>,' + str(totalSize) + '> ' + name + ' = {{\n')
+
+def writeTable(outputFile, table) :
+    outputFile.write('{{')
+
+    if table[0][0] != EMPTY : # Write first entry seperate so we don't write a ',' where it isn't required
+        outputFile.write('{{' + str(table[0][0][0]) + ', ' + str(table[0][0][1]) + '}}')
+    else :
+        outputFile.write(EMPTY)
+
+    for gate in table[0][1:len(table[0])] : # Write first entries seperate so we don't write a ',' where it isn't required
+        outputFile.write(', ')
+        if gate != EMPTY :
+            outputFile.write('{{' + str(gate[0]) + ', ' + str(gate[1]) + '}}')
+        else :
+            outputFile.write(EMPTY)
+
+    outputFile.write('}}')
+
+    for supertile in table[1:(len(table))] :
+        outputFile.write(',\n{{')
+
+        if supertile[0] != EMPTY : # Write first entry seperate so we don't write a ',' where it isn't required
+            outputFile.write('{{' + str(supertile[0][0]) + ', ' + str(supertile[0][1]) + '}}')
+        else :
+            outputFile.write(EMPTY)
+
+        for gate in supertile[1:len(supertile)] : 
+            outputFile.write(', ')
+            if gate != EMPTY :
+                outputFile.write('{{' + str(gate[0]) + ', ' + str(gate[1]) + '}}')
+            else :
+                outputFile.write(EMPTY)
+
+        outputFile.write('}}')
+
+def writeTableEnd(outputFile) :
+    outputFile.write('}};\n')
+
+def generate2in1out(outputFile) :
     lookupTableForFile = []
-    for directionOut in directions :# Represents the output wire
+    for directionOut in DIRECTIONS :# Represents the output wire
         for i in range(10) :
             lookupTableForFile.append("")
 
-        for directionIn1 in directions :# Represents the first input wire
+        for directionIn1 in DIRECTIONS :# Represents the first input wire
             if directionIn1 != directionOut :
-                for directionIn2 in directions : # Represents the second input wire
+                for directionIn2 in DIRECTIONS : # Represents the second input wire
                     if directionIn2 != directionOut and directionIn2 != directionIn1 and int(directionIn2) > int(directionIn1) :
                         
                         # Prepare programm inputs
@@ -297,13 +341,14 @@ def generate2in1out() :
                         executed_binary.wait()
                         programOutput = executed_binary.stdout.read().decode().split(", ")
 
-                        lookupTableForSupertile = [seperator,seperator,seperator,seperator,seperator,seperator,seperator,seperator,seperator,seperator]
+                        # prepare lookup table entry for this gate
+                        lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
                         # write input wires
                         updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn1), 0)
-                        updatedStartPosition += 1 # to insert dividing NULL
+                        updatedStartPosition += 1 # to insert dividing EMPTY
                         updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn2), updatedStartPosition)
-                        updatedStartPosition += 1 # to insert dividing NULL
+                        updatedStartPosition += 1 # to insert dividing EMPTY
                         
                         # write core
                         lookupTableForSupertile[updatedStartPosition] = coreLookup(programOutput[0])
@@ -313,67 +358,75 @@ def generate2in1out() :
                         writeOutputPathToTable(lookupTableForSupertile, programOutput, int(programOutput[0][-1]), updatedStartPosition)
 
                         # Add array entry
-                        lookupTableForFile[perfectHashFunction2in1out(int(directionOut), int(directionIn1), int(directionIn2))] = lookupTableForSupertile
+                        lookupTableForFile[perfectHashFunction21(int(directionOut), int(directionIn1), int(directionIn2))] = lookupTableForSupertile
 
     # Write array to file
-    output_file = open(r"lookup_table_2in_1out.hpp", "w")
+    writeTableStart(outputFile, 60, 10, 'lookup_table_2in1out')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
 
-    output_file.write('#include <array>\n#include <cstdint>\n\nstatic constexpr const std::array<std::array<std::array<int8_t,2>,10>,60> lookup_table_2in_1out = {{\n')
+def generate1in2out(outputFile) :
+    lookupTableForFile = []
+    for directionIn in DIRECTIONS :# Represents the output wire
+        for i in range(10) :
+            lookupTableForFile.append("")
 
-    output_file.write('{{')
+        for directionOut1 in DIRECTIONS :# Represents the first input wire
+            if directionOut1 != directionIn :
+                for directionOut2 in DIRECTIONS : # Represents the second input wire
+                    if directionOut2 != directionIn and directionOut2 != directionOut1 and int(directionOut2) > int(directionOut1) :
+                        
+                        # Prepare programm inputs
+                        gate = "SAMPLE" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
+                        inputWire = directionIn
+                        outputWires = directionOut1 + directionOut2
+                        args = ("./supertile_layout_generator", "-r", gate, outputWires, inputWire)
 
-    if lookupTableForFile[0][0] != seperator : # Write first entry seperate so we don't write a ',' where it isn't required
-        output_file.write('{{' + str(lookupTableForFile[0][0][0]) + ', ' + str(lookupTableForFile[0][0][1]) + '}}')
-    else :
-        output_file.write(seperator)
+                        # Execute programm and read output
+                        executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
+                        executed_binary.wait()
+                        programOutput = executed_binary.stdout.read().decode().split(", ")
 
-    for gate in lookupTableForFile[0][1:10] : # Write first entries seperate so we don't write a ',' where it isn't required
-        output_file.write(', ')
-        if gate != seperator :
-            output_file.write('{{' + str(gate[0]) + ', ' + str(gate[1]) + '}}')
-        else :
-            output_file.write(seperator)
+                        # prepare lookup table entry for this gate
+                        lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
-    output_file.write('}}')
+                        # write output wires
+                        if int(programOutput[0][-1]) == 2 or int(programOutput[0][-1]) == 3 :
+                            outputPosition1 = 0
+                            outputPosition2 = 5
+                        elif int(programOutput[0][-1]) == 0 or int(programOutput[0][-1]) == 5 :
+                            outputPosition1 = 2
+                            outputPosition2 = 3
+                        else :
+                            print("ERROR in generate1in2out")
+                            return
+                        updatedStartPosition = writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPosition1, 0)
+                        updatedStartPosition += 1 # to insert dividing EMPTY
+                        updatedStartPosition = writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPosition2, updatedStartPosition)
+                        updatedStartPosition += 1 # to insert dividing EMPTY
+                        
+                        # write core
+                        lookupTableForSupertile[updatedStartPosition] = [str(programOutput[0][-1]),str(-1)]
+                        updatedStartPosition += 1
 
-    for supertile in lookupTableForFile[1:60] :
-        output_file.write(',\n{{')
+                        # write intput wire
+                        writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), updatedStartPosition)
 
-        if supertile[0] != seperator : # Write first entry seperate so we don't write a ',' where it isn't required
-            output_file.write('{{' + str(supertile[0][0]) + ', ' + str(supertile[0][1]) + '}}')
-        else :
-            output_file.write(seperator)
+                        # Add array entry
+                        lookupTableForFile[perfectHashFunction21(int(directionIn), int(directionOut1), int(directionOut2))] = lookupTableForSupertile
 
-        for gate in supertile[1:10] : 
-            output_file.write(', ')
-            if gate != seperator :
-                output_file.write('{{' + str(gate[0]) + ', ' + str(gate[1]) + '}}')
-            else :
-                output_file.write(seperator)
+    # Write array to file
+    writeTableStart(outputFile, 60, 10, 'lookup_table_1in2out')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
 
-        output_file.write('}}')
-    
-    output_file.write('}};\n')
-
-    return
-
-    output_file.write('        {\n            ' + lookupTableForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
-    for entry in lookupTableForFile[1:60] :
-        output_file.write(',\n        {\n            ' + entry + '\n        }')
-
-    output_file.write('\n    ]\n')
-    output_file.write('}\n')
-
-    output_file.close()
-
-# Generates the .json file for gates with 1 input and 1 output (aka wires)
-def generate1in1outWIRE() :
-    lookupArrayForFile = []
-    for i in range(15) :
-            lookupArrayForFile.append("")
-    for directionOut in directions :# Represents the output wire
-        for directionIn in directions :# Represents the input wire
-            if directionIn > directionOut :
+def generate1in1outWIRE(outputFile) :
+    lookupTableForFile = []
+    for i in range(30) :
+            lookupTableForFile.append("")
+    for directionOut in DIRECTIONS :# Represents the output wire
+        for directionIn in DIRECTIONS :# Represents the input wire
+            if directionIn != directionOut :
                 # Prepare programm inputs
                 gate = "WIRE"
                 args = ("./supertile_layout_generator", "-r", gate, directionIn, directionOut)
@@ -381,42 +434,47 @@ def generate1in1outWIRE() :
                 # Execute programm and read output
                 executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
                 executed_binary.wait()
-                output = executed_binary.stdout.read().decode().split(", ")
+                programOutput = executed_binary.stdout.read().decode().split(", ")
 
-                # Write array entry
-                arrayEntry = '\"' + directionOut + directionIn + '\": ['
+                # prepare lookup table entry for this gate
+                lookupTableForSupertile = [EMPTY,EMPTY,EMPTY]
 
-                arrayEntry += '\"' + wireLookup(output[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
-                for wire in output[1:7] :
-                    arrayEntry += ', \"' + wireLookup(wire) + '\"'
+                # write input wire
+                updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
+
+                # write core
+                lookupTableForSupertile[updatedStartPosition] = ["7", directionIn]
+                updatedStartPosition += 1
                 
-                arrayEntry += ']'
+                # write output wire
+                writeOutputPathToTable(lookupTableForSupertile, programOutput, int(directionOut), updatedStartPosition)
 
                 # Add array entry
-                lookupArrayForFile[perfectHashFunction1in1out(int(directionOut), int(directionIn))] = arrayEntry
-    
+                lookupTableForFile[perfectHashFunction11(int(directionIn), int(directionOut))] = lookupTableForSupertile
+
     # Write array to file
-    output_file = open(r"1in1outWIRE_supertile_layouts.json", "w")
+    writeTableStart(outputFile, 30, 3, 'lookup_table_1in1out_WIRE')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
 
-    output_file.write('{\n')
-    output_file.write('    \"1in1outWIRE_supertile_layouts\": [\n')
+def getInverterCore(programOutput) :
+    match programOutput[0][-3] :
+        case "0" :
+            return ["0","-1"]
+        case "2" :
+            return ["2","-1"]
+        case "3" :
+            return ["3","-1"]
+        case "5" :
+            return ["5","-1"]
 
-    output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
-    for entry in lookupArrayForFile[1:30] :
-        output_file.write(',\n        {\n            ' + entry + '\n        }')
-
-    output_file.write('\n    ]\n')
-    output_file.write('}\n')
-
-    output_file.close()
-
-def generate1in1outINVERTER() :
-    lookupArrayForFile = []
-    for i in range(15) :
-            lookupArrayForFile.append("")
-    for directionOut in directions :# Represents the output wire
-        for directionIn in directions :# Represents the input wire
-            if directionIn > directionOut :
+def generate1in1outINVERTER(outputFile) :
+    lookupTableForFile = []
+    for i in range(30) :
+            lookupTableForFile.append("")
+    for directionOut in DIRECTIONS :# Represents the output wire
+        for directionIn in DIRECTIONS :# Represents the input wire
+            if directionIn != directionOut :
                 # Prepare programm inputs
                 gate = "INVERTER"
                 args = ("./supertile_layout_generator", "-r", gate, directionIn, directionOut)
@@ -424,41 +482,35 @@ def generate1in1outINVERTER() :
                 # Execute programm and read output
                 executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
                 executed_binary.wait()
-                output = executed_binary.stdout.read().decode().split(", ")
+                programOutput = executed_binary.stdout.read().decode().split(", ")
 
-                # Write array entry
-                arrayEntry = '\"' + directionOut + directionIn + '\": ['
+                # prepare lookup table entry for this gate
+                lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
-                arrayEntry += '\"' + coreLookup(output[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
-                for wire in output[1:7] :
-                    arrayEntry += ', \"' + wireLookup(wire) + '\"'
-                
-                arrayEntry += ']'
+                # write input wire
+                updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
+                updatedStartPosition += 1 # to insert dividing EMPTY
+
+                # write core
+                lookupTableForSupertile[updatedStartPosition] = getInverterCore(programOutput)
+                updatedStartPosition += 1
+
+                # write output wire
+                writeOutputPathToTable(lookupTableForSupertile, programOutput, int(programOutput[0][-1]), updatedStartPosition)
 
                 # Add array entry
-                lookupArrayForFile[perfectHashFunction1in1out(int(directionOut), int(directionIn))] = arrayEntry
+                lookupTableForFile[perfectHashFunction11(int(directionIn), int(directionOut))] = lookupTableForSupertile
     
     # Write array to file
-    output_file = open(r"1in1outINVERTER_supertile_layouts.json", "w")
+    writeTableStart(outputFile, 30, 6, 'lookup_table_1in1out_INVERTER')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
 
-    output_file.write('{\n')
-    output_file.write('    \"1in1outINVERTER_supertile_layouts\": [\n')
-
-    output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
-    for entry in lookupArrayForFile[1:30] :
-        output_file.write(',\n        {\n            ' + entry + '\n        }')
-
-    output_file.write('\n    ]\n')
-    output_file.write('}\n')
-
-    output_file.close()
-
-# Generates the .json file for gates with 1 input and 0 output (aka inputs)
-def generate1in0out() :
-    lookupArrayForFile = []
+def generate1in0out(outputFile) :
+    lookupTableForFile = []
     for i in range(6) :
-        lookupArrayForFile.append("")
-    for directionIn in directions :# Represents the input wire
+        lookupTableForFile.append("")
+    for directionIn in DIRECTIONS :# Represents the input wire
             # Prepare programm inputs
             gate = "INPUT"
             args = ("./supertile_layout_generator", "-r", gate, directionIn, "1" if directionIn == "0" else "0")
@@ -466,50 +518,54 @@ def generate1in0out() :
             # Execute programm and read output
             executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
             executed_binary.wait()
-            output = executed_binary.stdout.read().decode().split(", ")
-
-            # Write array entry
-            arrayEntry = '\"' + directionIn + '\": ['
-
-            arrayEntry += '\"' + wireLookup(output[0]) + '\"' # Write first entry seperate so we don't write a ',' where it isn't required
-            for wire in output[1:7] :
-                arrayEntry += ', \"' + wireLookup(wire) + '\"'
+            programOutput = executed_binary.stdout.read().decode().split(", ")
             
-            arrayEntry += ']'
+            # prepare lookup table entry for this gate
+            lookupTableForSupertile = [EMPTY,EMPTY]
+
+            # write input wires
+            updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
+
+            # write core
+            lookupTableForSupertile[updatedStartPosition] = ["7", directionIn]
 
             # Add array entry
-            lookupArrayForFile[perfectHashFunction1in0out(int(directionIn))] = arrayEntry
+            lookupTableForFile[perfectHashFunction10(int(directionIn))] = lookupTableForSupertile
 
     # Write array to file
-    output_file = open(r"0in1out_supertile_layouts.json", "w")
+    outputFile.write('\n//Trivial, so it\'s not actually used')
+    writeTableStart(outputFile, 6, 2, 'lookup_table_1in0out')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
 
-    output_file.write('{\n')
-    output_file.write('    \"0in1out_supertile_layouts\": [\n')
+def generate0in1out(outputFile) :
+    lookupTableForFile = []
+    for i in range(6) :
+        lookupTableForFile.append("")
+    for directionOut in DIRECTIONS :# Represents the input wire          
+            # prepare lookup table entry for this gate
+            lookupTableForSupertile = [EMPTY]
 
-    output_file.write('        {\n            ' + lookupArrayForFile[0] + '\n        }')# Write first entry seperate so we don't write a ',' where it isn't required
-    for entry in lookupArrayForFile[1:6] :
-        output_file.write(',\n        {\n            ' + entry + '\n        }')
+            # write output wire
+            lookupTableForSupertile[0] = [directionOut,"-1"]
 
-    output_file.write('\n    ]\n')
-    output_file.write('}\n')
+            # Add array entry
+            lookupTableForFile[perfectHashFunction10(int(directionOut))] = lookupTableForSupertile
 
-    output_file.close()
+    # Write array to file
+    outputFile.write('\n//Trivial, so it\'s not actually used')
+    writeTableStart(outputFile, 6, 2, 'lookup_table_0in1out')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
 
-# Read what should be generated
-response = input("Which .json file should be generated? Type the respective number to choose from the following options:\n    a: Every following option at once    1: 1 input, 1 output gates, (wire)    2: 1 input, 1 output gates, (inverter)    3: 2 inputs, 1 output gates   4: no input, 1 output gate, aka input\n")
-match response :
-    case "a" :
-        generate1in1outWIRE()
-        generate1in1outINVERTER()
-        generate2in1out()
-        generate1in0out()
-    case "1" :
-        generate1in1outWIRE()
-    case "2" :
-        generate1in1outINVERTER()
-    case "3" :
-        generate2in1out()
-    case "4" :
-        generate1in0out()
-    case _ :
-        print("Invalid response")
+outputFile = open(r"supertile_lookup_tables.hpp", "w")
+outputFile.write('#include <array>\n#include <cstdint>\n')
+
+generate2in1out(outputFile)
+generate1in2out(outputFile)
+generate1in1outWIRE(outputFile)
+generate1in1outINVERTER(outputFile)
+generate1in0out(outputFile)
+generate0in1out(outputFile)
+
+outputFile.close()
