@@ -19,6 +19,28 @@ DIRECTIONS = ["0", "1", "2", "3", "4", "5"]
 
 EMPTY = "{{-1,-1}}"
 
+def directionLookup(direction: str) :
+    match direction :
+        case "-1" :
+            return "X"
+        case "0" :
+            return "NE"
+        case "1" :
+            return "E"
+        case "2" :
+            return "SE"
+        case "3" :
+            return "SW"
+        case "4" :
+            return "W"
+        case "5" :
+            return "NW"
+        case "7" :
+            return "CORE"
+        case _ :
+            print("ERROR in directionLookup")
+            return direction
+
 def wireLookup(wireName: str) :
     match wireName :
         case "empty" :
@@ -286,16 +308,16 @@ def writeTable(outputFile, table) :
     outputFile.write('{{')
 
     if table[0][0] != EMPTY : # Write first entry seperate so we don't write a ',' where it isn't required
-        outputFile.write('{{' + str(table[0][0][0]) + ', ' + str(table[0][0][1]) + '}}')
+        outputFile.write('{{' + directionLookup(str(table[0][0][0])) + ', ' + directionLookup(str(table[0][0][1])) + '}}')
     else :
-        outputFile.write(EMPTY)
+        outputFile.write("{{X, X}}")
 
     for gate in table[0][1:len(table[0])] : # Write first entries seperate so we don't write a ',' where it isn't required
         outputFile.write(', ')
         if gate != EMPTY :
-            outputFile.write('{{' + str(gate[0]) + ', ' + str(gate[1]) + '}}')
+            outputFile.write('{{' + directionLookup(str(gate[0])) + ', ' + directionLookup(str(gate[1])) + '}}')
         else :
-            outputFile.write(EMPTY)
+            outputFile.write("{{X, X}}")
 
     outputFile.write('}}')
 
@@ -303,16 +325,16 @@ def writeTable(outputFile, table) :
         outputFile.write(',\n{{')
 
         if supertile[0] != EMPTY : # Write first entry seperate so we don't write a ',' where it isn't required
-            outputFile.write('{{' + str(supertile[0][0]) + ', ' + str(supertile[0][1]) + '}}')
+            outputFile.write('{{' + directionLookup(str(supertile[0][0])) + ', ' + directionLookup(str(supertile[0][1])) + '}}')
         else :
-            outputFile.write(EMPTY)
+            outputFile.write("{{X, X}}")
 
         for gate in supertile[1:len(supertile)] : 
             outputFile.write(', ')
             if gate != EMPTY :
-                outputFile.write('{{' + str(gate[0]) + ', ' + str(gate[1]) + '}}')
+                outputFile.write('{{' + directionLookup(str(gate[0])) + ', ' + directionLookup(str(gate[1])) + '}}')
             else :
-                outputFile.write(EMPTY)
+                outputFile.write("{{X, X}}")
 
         outputFile.write('}}')
 
@@ -558,7 +580,7 @@ def generate0in1out(outputFile) :
     writeTableEnd(outputFile)
 
 outputFile = open(r"supertile_lookup_tables.hpp", "w")
-outputFile.write('#include <array>\n#include <cstdint>\n')
+outputFile.write('#include <array>\n#include <cstdint>\n\nenum hex_direction_or_position {\n    NE = 0,\n    E = 1,\n    SE = 2,\n    SW = 3,\n    W = 4,\n    NW = 5,\n    X = 6,\n    CORE = 7\n};\n')
 
 generate2in1out(outputFile)
 generate1in2out(outputFile)
