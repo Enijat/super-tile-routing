@@ -329,7 +329,6 @@ def generate2in1out(outputFile) :
             if directionIn1 != directionOut :
                 for directionIn2 in DIRECTIONS : # Represents the second input wire
                     if directionIn2 != directionOut and directionIn2 != directionIn1 and int(directionIn2) > int(directionIn1) :
-                        
                         # Prepare programm inputs
                         gate = "SAMPLE" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
                         outputWire = directionOut
@@ -359,6 +358,7 @@ def generate2in1out(outputFile) :
 
                         # Add array entry
                         lookupTableForFile[perfectHashFunction21(int(directionOut), int(directionIn1), int(directionIn2))] = lookupTableForSupertile
+                        
 
     # Write array to file
     writeTableStart(outputFile, 60, 10, 'lookup_table_2in1out')
@@ -375,7 +375,6 @@ def generate1in2out(outputFile) :
             if directionOut1 != directionIn :
                 for directionOut2 in DIRECTIONS : # Represents the second input wire
                     if directionOut2 != directionIn and directionOut2 != directionOut1 and int(directionOut2) > int(directionOut1) :
-                        
                         # Prepare programm inputs
                         gate = "SAMPLE" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
                         inputWire = directionIn
@@ -390,6 +389,14 @@ def generate1in2out(outputFile) :
                         # prepare lookup table entry for this gate
                         lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
+                        # write intput wire
+                        updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
+                        updatedStartPosition += 1 # to insert dividing EMPTY
+                        
+                        # write core
+                        lookupTableForSupertile[updatedStartPosition] = [str(programOutput[0][-1]),str(-1)]
+                        updatedStartPosition += 1
+
                         # write output wires
                         if int(programOutput[0][-1]) == 2 or int(programOutput[0][-1]) == 3 :
                             outputPosition1 = 0
@@ -400,17 +407,9 @@ def generate1in2out(outputFile) :
                         else :
                             print("ERROR in generate1in2out")
                             return
-                        updatedStartPosition = writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPosition1, 0)
+                        updatedStartPosition = writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPosition1, updatedStartPosition)
                         updatedStartPosition += 1 # to insert dividing EMPTY
                         updatedStartPosition = writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPosition2, updatedStartPosition)
-                        updatedStartPosition += 1 # to insert dividing EMPTY
-                        
-                        # write core
-                        lookupTableForSupertile[updatedStartPosition] = [str(programOutput[0][-1]),str(-1)]
-                        updatedStartPosition += 1
-
-                        # write intput wire
-                        writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), updatedStartPosition)
 
                         # Add array entry
                         lookupTableForFile[perfectHashFunction21(int(directionIn), int(directionOut1), int(directionOut2))] = lookupTableForSupertile
@@ -460,13 +459,13 @@ def generate1in1outWIRE(outputFile) :
 def getInverterCore(programOutput) :
     match programOutput[0][-3] :
         case "0" :
-            return ["0","-1"]
+            return ["7","0"]
         case "2" :
-            return ["2","-1"]
+            return ["7","2"]
         case "3" :
-            return ["3","-1"]
+            return ["7","3"]
         case "5" :
-            return ["5","-1"]
+            return ["7","5"]
 
 def generate1in1outINVERTER(outputFile) :
     lookupTableForFile = []
