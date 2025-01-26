@@ -302,7 +302,7 @@ def writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPositio
     return updatedLookupTablePosition
 
 def writeTableStart(outputFile, totalSize, supertileSize, name) :
-    outputFile.write('\nstatic constexpr const std::array<std::array<std::array<int8_t,2>,' + str(supertileSize) + '>,' + str(totalSize) + '> ' + name + ' = {{\n')
+    outputFile.write('\nstatic constexpr const std::array<std::array<std::array<hex_direction,2>,' + str(supertileSize) + '>,' + str(totalSize) + '> ' + name + ' = {{\n')
 
 def writeTable(outputFile, table) :
     outputFile.write('{{')
@@ -580,7 +580,7 @@ def generate0in1out(outputFile) :
     writeTableEnd(outputFile)
 
 outputFile = open(r"supertile_lookup_tables.hpp", "w")
-outputFile.write('#include <array>\n#include <cstdint>\n\nenum hex_direction_or_position {\n    NE = 0,\n    E = 1,\n    SE = 2,\n    SW = 3,\n    W = 4,\n    NW = 5,\n    X = 6,\n    CORE = 7\n};\n')
+outputFile.write('#include <array>\n#include <cstdint>\n\nenum hex_direction {\n    NE = 0,\n    E = 1,\n    SE = 2,\n    SW = 3,\n    W = 4,\n    NW = 5,\n    X = 6,\n    CORE = 7\n};\n')
 
 generate2in1out(outputFile)
 generate1in2out(outputFile)
