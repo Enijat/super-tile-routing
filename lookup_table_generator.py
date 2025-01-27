@@ -416,7 +416,7 @@ def generate1in2out(outputFile) :
                         updatedStartPosition += 1 # to insert dividing EMPTY
                         
                         # write core
-                        lookupTableForSupertile[updatedStartPosition] = [str(programOutput[0][-1]),str(-1)]
+                        lookupTableForSupertile[updatedStartPosition] = ["7", str(programOutput[0][-1])]
                         updatedStartPosition += 1
 
                         # write output wires
