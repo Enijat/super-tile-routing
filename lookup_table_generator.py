@@ -363,7 +363,7 @@ def generate2in1out(outputFile) :
                         programOutput = executed_binary.stdout.read().decode().split(", ")
 
                         # prepare lookup table entry for this gate
-                        lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
+                        lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
                         # write input wires
                         updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn1), 0)
@@ -372,8 +372,8 @@ def generate2in1out(outputFile) :
                         updatedStartPosition += 1 # to insert dividing EMPTY
                         
                         # write core
-                        lookupTableForSupertile[updatedStartPosition] = coreLookup(programOutput[0])
-                        updatedStartPosition += 1
+                            # lookupTableForSupertile[updatedStartPosition] = coreLookup(programOutput[0]) actually not required, redundant information
+                            # updatedStartPosition += 1
 
                         # write output wire
                         writeOutputPathToTable(lookupTableForSupertile, programOutput, int(programOutput[0][-1]), updatedStartPosition)
@@ -383,7 +383,7 @@ def generate2in1out(outputFile) :
                         
 
     # Write array to file
-    writeTableStart(outputFile, 60, 10, 'lookup_table_2in1out')
+    writeTableStart(outputFile, 60, 9, 'lookup_table_2in1out')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
 
@@ -409,15 +409,15 @@ def generate1in2out(outputFile) :
                         programOutput = executed_binary.stdout.read().decode().split(", ")
 
                         # prepare lookup table entry for this gate
-                        lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
+                        lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
                         # write intput wire
                         updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
                         updatedStartPosition += 1 # to insert dividing EMPTY
                         
                         # write core
-                        lookupTableForSupertile[updatedStartPosition] = ["7", str(programOutput[0][-1])]
-                        updatedStartPosition += 1
+                            # lookupTableForSupertile[updatedStartPosition] = ["7", str(programOutput[0][-1])] actually not required, redundant information
+                            # updatedStartPosition += 1
 
                         # write output wires
                         if int(programOutput[0][-1]) == 2 or int(programOutput[0][-1]) == 3 :
@@ -437,7 +437,7 @@ def generate1in2out(outputFile) :
                         lookupTableForFile[perfectHashFunction21(int(directionIn), int(directionOut1), int(directionOut2))] = lookupTableForSupertile
 
     # Write array to file
-    writeTableStart(outputFile, 60, 10, 'lookup_table_1in2out')
+    writeTableStart(outputFile, 60, 9, 'lookup_table_1in2out')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
 
