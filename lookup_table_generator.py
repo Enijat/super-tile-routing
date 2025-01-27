@@ -506,15 +506,15 @@ def generate1in1outINVERTER(outputFile) :
                 programOutput = executed_binary.stdout.read().decode().split(", ")
 
                 # prepare lookup table entry for this gate
-                lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
+                lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
                 # write input wire
                 updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
                 updatedStartPosition += 1 # to insert dividing EMPTY
 
                 # write core
-                lookupTableForSupertile[updatedStartPosition] = getInverterCore(programOutput)
-                updatedStartPosition += 1
+                    # lookupTableForSupertile[updatedStartPosition] = getInverterCore(programOutput) actually not required, redundant information
+                    # updatedStartPosition += 1
 
                 # write output wire
                 writeOutputPathToTable(lookupTableForSupertile, programOutput, int(programOutput[0][-1]), updatedStartPosition)
@@ -523,7 +523,7 @@ def generate1in1outINVERTER(outputFile) :
                 lookupTableForFile[perfectHashFunction11(int(directionIn), int(directionOut))] = lookupTableForSupertile
     
     # Write array to file
-    writeTableStart(outputFile, 30, 6, 'lookup_table_1in1out_INVERTER')
+    writeTableStart(outputFile, 30, 5, 'lookup_table_1in1out_INVERTER')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
 
