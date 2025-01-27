@@ -474,6 +474,7 @@ def generate1in1outWIRE(outputFile) :
                 lookupTableForFile[perfectHashFunction11(int(directionIn), int(directionOut))] = lookupTableForSupertile
 
     # Write array to file
+    outputFile.write('\n//Trivial, so it\'s not actually used')
     writeTableStart(outputFile, 30, 3, 'lookup_table_1in1out_WIRE')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
