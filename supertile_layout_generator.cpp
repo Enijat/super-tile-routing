@@ -70,7 +70,7 @@ enum wireType {
     NaW, in1, in2, in3, in4, in5, out1, out2, out3, out4, out5
 };
 
-//The numbers for each wire are the combination of thier parts
+//The numbers for each wire are the combination of their parts
 enum wire {
     empty = 0, //in case there is no wire needed in this part of the super tile
     wire01 = 1, wire02 = 2, wire03 = 4, wire04 = 8, wire05 = 16, wire12 = 32, wire13 = 64, wire14 = 128, wire15 = 256, wire23 = 512, wire24 = 1024, wire25 = 2048, wire34 = 4096, wire35 = 8192, wire45 = 16384, //standard wires
@@ -95,6 +95,8 @@ superTile* solver1in1out(int*, int*, char*, bool);
     bool goClockwise(int, int, int);
     gate* getICore(int*, int*);
 superTile* solver1in0out(int*, bool);
+superTile* solver2in2outCROSSING(int*, int*, bool);
+superTile* solver2in2outBYPASS(int*, int*, bool);
 void printLayout(superTile*);
     void setNormalisedString(const char*, char*);
     void setNormalisedNumbers(int*, int, char*);
@@ -203,37 +205,33 @@ int main(int argc, char** argv)
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver2in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-
-        if (finishedLayout == NULL) {
-            free(inPositions);
-            free(outPositions);
-            return EXIT_FAILURE;
-        }
     } else if (inPositionsSize == 1 && outPositionsSize == 1 && strcmp(coreName, "INPUT")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver1in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-
-        if (finishedLayout == NULL) {
-            free(inPositions);
-            free(outPositions);
-            return EXIT_FAILURE;
-        }
     } else if (inPositionsSize == 1 && !strcmp(coreName, "INPUT")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver1in0out(inPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-
-        if (finishedLayout == NULL) {
-            free(inPositions);
-            free(outPositions);
-            return EXIT_FAILURE;
-        }
+    } else if (inPositionsSize == 2 && outPositionsSize == 2 && !strcmp(coreName, "CROSSING")) {
+        clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
+        finishedLayout = solver2in2outCROSSING(inPositions, outPositions, printTheWirePaths);
+        clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
+    } else if (inPositionsSize == 2 && outPositionsSize == 2 && strcmp(coreName, "BYPASS")) {
+        clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
+        finishedLayout = solver2in2outBYPASS(inPositions, outPositions, printTheWirePaths);
+        clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
     } else {
-        printf("There has been no solver implemented for a core gate with %i inputs and %i outputs. For more info, add optional argument -h.\n", inPositionsSize, outPositionsSize);
+        printf("There has been no solver implemented for a core gate with %i inputs and %i outputs or you have a type in the core-gate name. For more info, add optional argument -h.\n", inPositionsSize, outPositionsSize);
         free(inPositions);
         free(outPositions);
         return EXIT_SUCCESS;
+    }
+
+    if (finishedLayout == NULL) {
+        free(inPositions);
+        free(outPositions);
+        return EXIT_FAILURE;
     }
 
     if (trackTime) {
@@ -267,7 +265,7 @@ void printLayoutExplanation() {
 
 //TODO change the gate list to lookup from file or move the list to the top and use it here.
 void printCoreGateList() {
-    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT (if this core is chosen, the given output is ignored)\n    INVERTER\n");
+    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT (if this core is chosen, the given output is ignored)\n    INVERTER\n    CROSSING (if the inputs aren't actually crossing, unexpected behaviour may happen)\n    BYPASS (if the inputs aren't actually passing by each other, unexpected behaviour may happen)\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
@@ -780,7 +778,6 @@ gate* getYCoreUpright(int* inPositions, int* outPosition) {
     return core;
 }
 
-
 superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool printTheWirePaths) {
     wireType** outerTiles = (wireType**) malloc(sizeof(wireType*)*6);
     for (int x = 0; x < 6; x++) {
@@ -824,10 +821,9 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
         //Connect ouput
         outerTiles[core->outPositions[0]][0] = out1;
         outerTiles[outPosition[0]][2] = out1;
-        bool clockwiseOutput = goClockwise(core->outPositions[0], outPosition[0], core->inPositions[0]);
         if (core->outPositions[0] != outPosition[0]) {
            int currentPos = core->outPositions[0];
-           if (clockwiseOutput) {
+           if (goClockwise(core->outPositions[0], outPosition[0], core->inPositions[0])) {
                while (currentPos != outPosition[0]) {
                    outerTiles[currentPos][1] = out1;
                    currentPos = (currentPos + 1) % 6;;
@@ -843,13 +839,12 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
         //Connect input
         outerTiles[core->inPositions[0]][0] = in1;
         outerTiles[inPosition[0]][2] = in1;
-        clockwiseOutput = goClockwise(core->inPositions[0], inPosition[0], core->outPositions[0]);
         if (core->inPositions[0] != inPosition[0]) {
            int currentPos = core->inPositions[0];
-           if (clockwiseOutput) {
+           if (goClockwise(core->inPositions[0], inPosition[0], core->outPositions[0])) {
                while (currentPos != inPosition[0]) {
                    outerTiles[currentPos][1] = in1;
-                   currentPos = (currentPos + 1) % 6;;
+                   currentPos = (currentPos + 1) % 6;
                }
            } else {
                do {
@@ -1086,6 +1081,306 @@ superTile* solver1in0out(int* inPosition, bool printTheWirePaths) {
     free(outerTiles);
 
     return super;
+}
+
+gate* getXCore(int* inPositions, int* outPositions) {
+    gate* core = (gate*) malloc(sizeof(gate));
+    core->outPositions = (int*) malloc(sizeof(int)*2);
+    core->outPositionsSize = 2;
+    core->inPositions = (int*) malloc(sizeof(int)*2);
+    core->inPositionsSize = 2;
+
+    switch (inPositions[0]) {
+    default:
+    case 0:
+        core->inPositions[0] = 0;
+        if (inPositions[1] == 5 || inPositions[1] == 4 || inPositions[1] == 3) {
+            core->inPositions[1] = 5;
+            core->outPositions[0] = 3;
+            core->outPositions[1] = 2;
+        } else {
+            core->inPositions[1] = 2;
+            core->outPositions[0] = 3;
+            core->outPositions[1] = 5;
+        }
+        break;
+    case 1:
+        switch (inPositions[1]) {
+        default:
+        case 0:
+            core->inPositions[0] = 2;
+            core->inPositions[1] = 0;
+            core->outPositions[0] = 5;
+            core->outPositions[1] = 3;
+            break;
+        case 2:
+            core->inPositions[0] = 0;
+            core->inPositions[1] = 2;
+            core->outPositions[0] = 3;
+            core->outPositions[1] = 5;
+            break;
+        case 3:
+            core->inPositions[0] = 2;
+            core->inPositions[1] = 3;
+            core->outPositions[0] = 5;
+            core->outPositions[1] = 0;
+            break;
+        case 4:
+            if (outPositions[0] == 5) {
+                core->inPositions[0] = 2;
+                core->inPositions[1] = 3;
+                core->outPositions[0] = 5;
+                core->outPositions[1] = 0;
+            } else { // outPositions[0] == 3
+                core->inPositions[0] = 0;
+                core->inPositions[1] = 5;
+                core->outPositions[0] = 3;
+                core->outPositions[1] = 2;
+            }
+            break;
+        case 5:
+            core->inPositions[0] = 0;
+            core->inPositions[1] = 5;
+            core->outPositions[0] = 3;
+            core->outPositions[1] = 2;
+            break;
+        }
+        break;
+    case 2:
+        core->inPositions[0] = 2;
+        if (inPositions[1] == 1 || inPositions[1] == 0 || inPositions[1] == 5) {
+            core->inPositions[1] = 0;
+            core->outPositions[0] = 5;
+            core->outPositions[1] = 3;
+        } else {
+            core->inPositions[1] = 3;
+            core->outPositions[0] = 5;
+            core->outPositions[1] = 0;
+        }
+        break;
+    case 3:
+        core->inPositions[0] = 3;
+        if (inPositions[1] == 2 || inPositions[1] == 1 || inPositions[1] == 0) {
+            core->inPositions[1] = 2;
+            core->outPositions[0] = 0;
+            core->outPositions[1] = 5;
+        } else {
+            core->inPositions[1] = 5;
+            core->outPositions[0] = 0;
+            core->outPositions[1] = 2;
+        }
+        break;
+    case 4:
+        switch (inPositions[1]) {
+            default:
+            case 0:
+                core->inPositions[0] = 5;
+                core->inPositions[1] = 0;
+                core->outPositions[0] = 2;
+                core->outPositions[1] = 3;
+                break;
+            case 1:
+                if (outPositions[0] == 2) {
+                    core->inPositions[0] = 5;
+                    core->inPositions[1] = 0;
+                    core->outPositions[0] = 2;
+                    core->outPositions[1] = 3;
+                } else { // outPositions[0] == 0
+                    core->inPositions[0] = 3;
+                    core->inPositions[1] = 2;
+                    core->outPositions[0] = 0;
+                    core->outPositions[1] = 5;
+                }
+                break;
+            case 2:
+                core->inPositions[0] = 3;
+                core->inPositions[1] = 2;
+                core->outPositions[0] = 0;
+                core->outPositions[1] = 5;
+                break;
+            case 3:
+                core->inPositions[0] = 5;
+                core->inPositions[1] = 3;
+                core->outPositions[0] = 2;
+                core->outPositions[1] = 0;
+                break;
+            case 5:
+                core->inPositions[0] = 3;
+                core->inPositions[1] = 5;
+                core->outPositions[0] = 0;
+                core->outPositions[1] = 2;
+                break;
+        }
+        break;
+    case 5:
+        core->inPositions[0] = 5;
+        if (inPositions[1] == 4 || inPositions[1] == 3 || inPositions[1] == 2) {
+            core->inPositions[1] = 3;
+            core->outPositions[0] = 2;
+            core->outPositions[1] = 0;
+        } else {
+            core->inPositions[1] = 0;
+            core->outPositions[0] = 2;
+            core->outPositions[1] = 3;
+        }
+        break;
+    }
+    
+    return core;
+}
+
+superTile* solver2in2outCROSSING(int* inPositions, int* outPositions, bool printTheWirePaths) {
+    /** Matrix structure: Each (triple) represents one tile, and the respective [tree numbers] represent the core-connection, the next-clockwise-tile-connection and the outwards-connection, see diagram:
+     * 
+     *         ˍ---¯ ¯[2]ˍ ˍ---¯ ¯---ˍ
+     *        |       /   |           |
+     *        |    (5) --[1]   (0) --[2]
+     *        |       \   |   /   \   |
+     *   ˍ[2]¯ ¯[1]ˍ ˍ[0]¯ ¯[0]ˍ ˍ[1]¯ ¯---ˍ
+     *  |   \   /   |           |           |
+     *  |    (4) --[0]   Core  [0]-- (1)    |
+     *  |           |           |   /   \   |
+     *   ¯---ˍ ˍ[1]¯ ¯[0]ˍ ˍ[0]¯ ¯[1]ˍ ˍ[2]¯
+     *        |   \   /   |   \       |
+     *       [2]-- (3)   [1]-- (2)    |
+     *        |           |   /       |
+     *         ¯---ˍ ˍ---¯ ¯[2]ˍ ˍ---¯
+     */
+    wireType** outerTiles = (wireType**) malloc(sizeof(wireType*)*6);
+    for (int x = 0; x < 6; x++) {
+        outerTiles[x] = (wireType*) malloc(sizeof(wireType)*3);
+        for (int y = 0; y < 3; y++) {
+            outerTiles[x][y] = NaW;
+        }
+    }
+
+    gate* core = getXCore(inPositions, outPositions);
+    core->name = "CROSSING";
+
+    //Connect inputs
+    outerTiles[core->inPositions[0]][0] = in1;
+    outerTiles[inPositions[0]][2] = in1;
+    if (core->inPositions[0] != inPositions[0]) {
+        int currentPos = core->inPositions[0];
+        if (goClockwise(core->inPositions[0], inPositions[0], inPositions[1])) {
+            while (currentPos != inPositions[0]) {
+                outerTiles[currentPos][1] = in1;
+                currentPos = (currentPos + 1) % 6;
+            }
+        } else {
+            do {
+                currentPos = mod((currentPos - 1), 6);
+                outerTiles[currentPos][1] = in1;
+            } while (currentPos != inPositions[0]);
+        }
+    }
+
+    outerTiles[core->inPositions[1]][0] = in2;
+    outerTiles[inPositions[1]][2] = in2;
+    if (core->inPositions[1] != inPositions[1]) {
+        int currentPos = core->inPositions[1];
+        if (goClockwise(core->inPositions[1], inPositions[1], inPositions[0])) {
+            while (currentPos != inPositions[1]) {
+                outerTiles[currentPos][1] = in2;
+                currentPos = (currentPos + 1) % 6;
+            }
+        } else {
+            do {
+                currentPos = mod((currentPos - 1), 6);
+                outerTiles[currentPos][1] = in2;
+            } while (currentPos != inPositions[1]);
+        }
+    }
+
+    //Connect outputs
+    outerTiles[core->outPositions[0]][0] = out1;
+    outerTiles[outPositions[0]][2] = out1;
+    if (core->outPositions[0] != outPositions[0]) {
+        int currentPos = core->outPositions[0];
+        if (goClockwise(core->outPositions[0], outPositions[0], outPositions[1])) {
+            while (currentPos != outPositions[0]) {
+                outerTiles[currentPos][1] = out1;
+                currentPos = (currentPos + 1) % 6;
+            }
+        } else {
+            do {
+                currentPos = mod((currentPos - 1), 6);
+                outerTiles[currentPos][1] = out1;
+            } while (currentPos != outPositions[0]);
+        }
+    }
+
+    outerTiles[core->outPositions[1]][0] = out2;
+    outerTiles[outPositions[1]][2] = out2;
+    if (core->outPositions[1] != outPositions[1]) {
+        int currentPos = core->outPositions[1];
+        if (goClockwise(core->outPositions[1], outPositions[1], outPositions[0])) {
+            while (currentPos != outPositions[1]) {
+                outerTiles[currentPos][1] = out2;
+                currentPos = (currentPos + 1) % 6;
+            }
+        } else {
+            do {
+                currentPos = mod((currentPos - 1), 6);
+                outerTiles[currentPos][1] = out2;
+            } while (currentPos != outPositions[1]);
+        }
+    }
+
+    superTile* super = (superTile*) malloc(sizeof(superTile));
+    super->core = core;
+    super->wires = (gate**) malloc(sizeof(gate*)*6);
+
+    //Get the wire-gates which are required on the outside
+    for (int currentGate = 0; currentGate < 6; currentGate++) {
+        int* currentWirePositions = getWireTileConnections(outerTiles, currentGate);
+        if (currentWirePositions == NULL) {
+            for (int x = 0; x < 6; x++) {
+                free(outerTiles[x]);
+            }
+            free(outerTiles);
+            for (int x = 0; x < currentGate; x++) {
+                free(super->wires[x]);
+            }
+            free(super);
+            return NULL;
+        }
+
+        gate* wireGate = (gate*) malloc(sizeof(gate));
+    
+        if (getWireTile(currentWirePositions, currentGate, wireGate)) {
+            printf("A wire gate is required that is not yet implemented.\n");
+            for (int x = 0; x < 6; x++) {
+                free(outerTiles[x]);
+            }
+            free(outerTiles);
+            for (int x = 0; x < currentGate; x++) {
+                free(super->wires[x]);
+            }
+            free(super);
+            free(wireGate);
+            free(currentWirePositions);
+            return NULL;
+        }
+        free(currentWirePositions);
+
+        super->wires[currentGate] = wireGate;
+    }
+
+    if (printTheWirePaths) {
+        printWirePaths(outerTiles, core); //Can be use for debugging
+    }
+
+    for (int x = 0; x < 6; x++) {
+        free(outerTiles[x]);
+    }
+    free(outerTiles);
+
+    return super;
+}
+
+superTile* solver2in2outBYPASS(int* inPositions, int* outPositions, bool printTheWirePaths) {
+    return NULL;//TODO continue
 }
 
 bool goClockwise(int start, int end, int blocker) {
@@ -1531,7 +1826,7 @@ void printWirePaths(wireType** outerTiles, gate* core) {
     printf("  |           |           |           |      I -> first input wire\n");
     printf("  |    (4)    %c   (Core)  %c    (1)    |      i -> second input wire\n", getWireTypeSynonymB(outerTiles[4][0]), getWireTypeSynonymB(outerTiles[1][0]));
     printf("  |           |           |           |      O -> first output wire\n");
-    printf("   ¯---ˍ ˍ-%c-¯ ¯-%c-ˍ ˍ-%c-¯ ¯-%c-ˍ ˍ-%c-¯       o -> second output wire (not used so far)\n", getWireTypeSynonymA(outerTiles[3][1]), getWireTypeSynonymA(outerTiles[3][0]), getWireTypeSynonymA(outerTiles[2][0]), getWireTypeSynonymA(outerTiles[1][1]), getWireTypeSynonymA(outerTiles[1][2]));
+    printf("   ¯---ˍ ˍ-%c-¯ ¯-%c-ˍ ˍ-%c-¯ ¯-%c-ˍ ˍ-%c-¯       o -> second output wire\n", getWireTypeSynonymA(outerTiles[3][1]), getWireTypeSynonymA(outerTiles[3][0]), getWireTypeSynonymA(outerTiles[2][0]), getWireTypeSynonymA(outerTiles[1][1]), getWireTypeSynonymA(outerTiles[1][2]));
     printf("        |           |           |          \n");
     printf("        %c    (3)    %c    (2)    |        \n", getWireTypeSynonymB(outerTiles[3][2]), getWireTypeSynonymB(outerTiles[2][1]));
     printf("        |           |           |\n");
@@ -1678,7 +1973,7 @@ void printReducedLayout(superTile* layout) {
                     coreName += "_Unknown core orientation";
                     break;
             }
-        } else if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) { // Used to identify the core gates based on their output direction, not required for wires since they are specified already
+        } else if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE")) && std::string::npos == (coreName.find("CROSSING"))) { // Used to identify the core gates based on their output direction, not required for wires since they are specified already, also not required for wire crossings
             switch (layout->core->outPositions[0]) {
                 case 3:
                     coreName += "_3";
