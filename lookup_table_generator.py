@@ -341,6 +341,37 @@ def writeTable(outputFile, table) :
 def writeTableEnd(outputFile) :
     outputFile.write('}};\n')
 
+def checkIfCrossing(in1, in2, out1, out2) :
+    norm_in2 = (in2 - in1) % 6
+    norm_out1 = (out1 - in1) % 6
+    norm_out2 = (out2 - in1) % 6
+
+    if norm_out1 == 5 or norm_out1 == 1 :
+        return False
+    
+    match norm_out1 :
+        case 2:
+            if norm_in2 == 1 or norm_out2 == 1 :
+                return True
+            else :
+                return False
+        case 3:
+            if (norm_in2 == 4 and norm_out2 == 5) or (norm_in2 == 5 and norm_out2 == 4) or (norm_in2 == 1 and norm_out2 == 2) or (norm_in2 == 2 and norm_out2 == 1) :
+                return False
+            else :
+                return True
+        case 4:
+            if norm_in2 == 5 or norm_out2 == 5 :
+                return True
+            else :
+                return False
+
+def generate2in2outCROSSING(outputfile) :
+    lookupTableForFile = []
+    for directionIn1 in DIRECTIONS :
+        
+
+
 def generate2in1out(outputFile) :
     lookupTableForFile = []
     for directionOut in DIRECTIONS :# Represents the output wire
@@ -580,6 +611,8 @@ def generate0in1out(outputFile) :
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
 
+# Start of programm:
+
 outputFile = open(r"supertile_lookup_tables.hpp", "w")
 outputFile.write('#include <array>\n#include <cstdint>\n\nenum hex_direction {\n    NE = 0,\n    E = 1,\n    SE = 2,\n    SW = 3,\n    W = 4,\n    NW = 5,\n    X = 6,\n    CORE = 7\n};\n')
 
@@ -589,5 +622,6 @@ generate1in1outWIRE(outputFile)
 generate1in1outINVERTER(outputFile)
 generate1in0out(outputFile)
 generate0in1out(outputFile)
+generate2in2outCROSSING(outputFile)
 
 outputFile.close()

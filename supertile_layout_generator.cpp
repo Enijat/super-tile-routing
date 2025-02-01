@@ -217,18 +217,19 @@ int main(int argc, char** argv)
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver2in2outCROSSING(inPositions, outPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-    } else if (inPositionsSize == 2 && outPositionsSize == 2 && strcmp(coreName, "BYPASS")) {
+    } else if (inPositionsSize == 2 && outPositionsSize == 2 && !strcmp(coreName, "BYPASS")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver2in2outBYPASS(inPositions, outPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
     } else {
-        printf("There has been no solver implemented for a core gate with %i inputs and %i outputs or you have a type in the core-gate name. For more info, add optional argument -h.\n", inPositionsSize, outPositionsSize);
+        printf("There has been no solver implemented for a core gate with %i inputs and %i outputs or you have a typo in the core-gate name. For more info, add optional argument -h.\n", inPositionsSize, outPositionsSize);
         free(inPositions);
         free(outPositions);
         return EXIT_SUCCESS;
     }
 
     if (finishedLayout == NULL) {
+        printf("Something went wrong during layout generation.\n");
         free(inPositions);
         free(outPositions);
         return EXIT_FAILURE;
@@ -265,7 +266,7 @@ void printLayoutExplanation() {
 
 //TODO change the gate list to lookup from file or move the list to the top and use it here.
 void printCoreGateList() {
-    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT (if this core is chosen, the given output is ignored)\n    INVERTER\n    CROSSING (if the inputs aren't actually crossing, unexpected behaviour may happen)\n    BYPASS (if the inputs aren't actually passing by each other, unexpected behaviour may happen)\n");
+    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT     (if this core is chosen, the given output is ignored)\n    INVERTER\n    CROSSING  (if the inputs aren't actually crossing, unexpected behaviour may happen)\n    BYPASS    (if the inputs aren't actually passing by each other, unexpected behaviour may happen)\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
