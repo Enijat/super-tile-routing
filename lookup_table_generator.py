@@ -17,7 +17,7 @@ import sys
 #           ¯---ˍˍˍ---¯ ¯---ˍˍˍ---¯
 DIRECTIONS = ["0", "1", "2", "3", "4", "5"]
 
-EMPTY = "{{-1,-1}}"
+EMPTY = "-1"
 
 def directionLookup(direction: str) :
     match direction :
@@ -106,18 +106,16 @@ def wireLookup(wireName: str) :
         case _:
             return [100, 100, 100, 100]
 
-def coreLookup(coreName) :
-    match (coreName[-1]) :
-        case "0" :
-            return ["2","3"]
-        case "2" :
-            return ["0","5"]
-        case "3" :
-            return ["0","5"]
-        case "5" :
-            return ["2","3"]
-        case _:
-            return ["ERROR_unknown-core-orientation", "ERROR_unknown-core-orientation"]
+def perfectHashFunction22(in1, out1, in2, out2) :
+    if in2 * out2 == 8 :
+        basicResult = 17
+    else :
+        basicResult = 2*out1 + in2 + out2
+
+    if in2 < out2 :
+        return 20*in1 + basicResult - 8
+    else :
+        return 20*in1 + 10 + basicResult - 8
 
 def perfectHashFunction21(A, B, C) :
     b = (B - A) % 6 # get B and C into the same 1-5 range for all A
@@ -207,6 +205,8 @@ def translateDirectionToPosition(currentPosition, direction) :
                     return 4
                 case _ :
                     return 8
+        case 7 :
+            return direction
         case _ :
             print("ERROR in translateDirectionToPosition")
             return 99
@@ -216,43 +216,27 @@ def writeInputPathToTable(lookupTableForSupertile, programOutput, inputPosition,
     currentWirePosition = inputPosition
     lastWirePosition = 8
     while True :
-        lookupTableEntry = [str(currentWirePosition), "placeholder"]
-        wireConnections = wireLookup(programOutput[currentWirePosition + 1])
-        if translateDirectionToPosition(currentWirePosition, wireConnections[0]) == lastWirePosition:
-            lookupTableEntry[1] = str(wireConnections[0])
+        lookupTableForSupertile[updatedLookupTablePosition] = str(currentWirePosition)
+        updatedLookupTablePosition += 1
+        wireConnections = wireLookup(programOutput[currentWirePosition + 1]) # +1 to skip the core in the output
+        if translateDirectionToPosition(currentWirePosition, wireConnections[0]) == lastWirePosition :
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[1])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 7 :
-                break
         elif translateDirectionToPosition(currentWirePosition, wireConnections[1]) == lastWirePosition :
-            lookupTableEntry[1] = str(wireConnections[1])
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[0])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 7 :
-                break
         elif translateDirectionToPosition(currentWirePosition, wireConnections[2]) == lastWirePosition :
-            lookupTableEntry[1] = str(wireConnections[2])
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[3])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 7 :
-                break
         elif translateDirectionToPosition(currentWirePosition, wireConnections[3]) == lastWirePosition :
-            lookupTableEntry[1] = str(wireConnections[3])
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[2])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 7 :
-                break
         else :
             print("ERROR in writeInputPathToTable")
             return 0
+        
+        if currentWirePosition == 7 :
+            break
 
     return updatedLookupTablePosition
 
@@ -261,63 +245,46 @@ def writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPositio
     currentWirePosition = outputPosition
     lastWirePosition = 7
     while True :
-        lookupTableEntry = [str(currentWirePosition), "placeholder"]
+        lookupTableForSupertile[updatedLookupTablePosition] = str(currentWirePosition)
+        updatedLookupTablePosition += 1
         wireConnections = wireLookup(programOutput[currentWirePosition + 1])
         if translateDirectionToPosition(currentWirePosition, wireConnections[0]) == lastWirePosition:
-            lookupTableEntry[1] = str(wireConnections[0])
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[1])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 8 :
-                break
         elif translateDirectionToPosition(currentWirePosition, wireConnections[1]) == lastWirePosition :
-            lookupTableEntry[1] = str(wireConnections[1])
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[0])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 8 :
-                break
         elif translateDirectionToPosition(currentWirePosition, wireConnections[2]) == lastWirePosition :
-            lookupTableEntry[1] = str(wireConnections[2])
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[3])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 8 :
-                break
         elif translateDirectionToPosition(currentWirePosition, wireConnections[3]) == lastWirePosition :
-            lookupTableEntry[1] = str(wireConnections[3])
             lastWirePosition = currentWirePosition
             currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[2])
-            lookupTableForSupertile[updatedLookupTablePosition] = lookupTableEntry
-            updatedLookupTablePosition += 1
-            if currentWirePosition == 8 :
-                break
         else :
-            print("check: " + str(translateDirectionToPosition(currentWirePosition, wireConnections[3])))
             print("ERROR in writeOutputPathToTable")
             break
+        if currentWirePosition == 8 :
+                break
+        
     return updatedLookupTablePosition
 
 def writeTableStart(outputFile, totalSize, supertileSize, name) :
-    outputFile.write('\nstatic constexpr const std::array<std::array<std::array<hex_direction,2>,' + str(supertileSize) + '>,' + str(totalSize) + '> ' + name + ' = {{\n')
+    outputFile.write('\nstatic constexpr const std::array<std::array<hex_direction,' + str(supertileSize) + '>,' + str(totalSize) + '> ' + name + ' = {{\n')
 
 def writeTable(outputFile, table) :
     outputFile.write('{{')
 
     if table[0][0] != EMPTY : # Write first entry seperate so we don't write a ',' where it isn't required
-        outputFile.write('{{' + directionLookup(str(table[0][0][0])) + ', ' + directionLookup(str(table[0][0][1])) + '}}')
+        outputFile.write(directionLookup(str(table[0][0])))
     else :
-        outputFile.write("{{X, X}}")
+        outputFile.write("X")
 
     for gate in table[0][1:len(table[0])] : # Write first entries seperate so we don't write a ',' where it isn't required
         outputFile.write(', ')
         if gate != EMPTY :
-            outputFile.write('{{' + directionLookup(str(gate[0])) + ', ' + directionLookup(str(gate[1])) + '}}')
+            outputFile.write(directionLookup(str(gate)))
         else :
-            outputFile.write("{{X, X}}")
+            outputFile.write("X")
 
     outputFile.write('}}')
 
@@ -325,16 +292,16 @@ def writeTable(outputFile, table) :
         outputFile.write(',\n{{')
 
         if supertile[0] != EMPTY : # Write first entry seperate so we don't write a ',' where it isn't required
-            outputFile.write('{{' + directionLookup(str(supertile[0][0])) + ', ' + directionLookup(str(supertile[0][1])) + '}}')
+            outputFile.write(directionLookup(str(supertile[0])))
         else :
-            outputFile.write("{{X, X}}")
+            outputFile.write("X")
 
         for gate in supertile[1:len(supertile)] : 
             outputFile.write(', ')
             if gate != EMPTY :
-                outputFile.write('{{' + directionLookup(str(gate[0])) + ', ' + directionLookup(str(gate[1])) + '}}')
+                outputFile.write(directionLookup(str(gate)))
             else :
-                outputFile.write("{{X, X}}")
+                outputFile.write("X")
 
         outputFile.write('}}')
 
@@ -366,12 +333,89 @@ def checkIfCrossing(in1, in2, out1, out2) :
             else :
                 return False
 
+def crossingLookup(coreName) :
+    in1 = int(coreName[-1])
+    in2 = int(coreName[-3])
+    out1 = (in1 + 3) % 6
+    out2 = (in2 + 3) % 6
+    return [in1, out1, in2, out2]
+
+def writeCrossingWireToTable(lookupTableForSupertile, programOutput, inputPosition, lookupTableStartPosition) :
+    updatedLookupTablePosition = lookupTableStartPosition
+    currentWirePosition = inputPosition
+    lastWirePosition = 8
+    while True :
+        lookupTableForSupertile[updatedLookupTablePosition] = str(currentWirePosition)
+        updatedLookupTablePosition += 1
+        if currentWirePosition != 7 :
+            wireConnections = wireLookup(programOutput[currentWirePosition + 1]) # +1 to skip the core in the output
+        else :
+            wireConnections = crossingLookup(programOutput[0])
+        if translateDirectionToPosition(currentWirePosition, wireConnections[0]) == lastWirePosition :
+            lastWirePosition = currentWirePosition
+            currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[1])
+        elif translateDirectionToPosition(currentWirePosition, wireConnections[1]) == lastWirePosition :
+            lastWirePosition = currentWirePosition
+            currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[0])
+        elif translateDirectionToPosition(currentWirePosition, wireConnections[2]) == lastWirePosition :
+            lastWirePosition = currentWirePosition
+            currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[3])
+        elif translateDirectionToPosition(currentWirePosition, wireConnections[3]) == lastWirePosition :
+            lastWirePosition = currentWirePosition
+            currentWirePosition = translateDirectionToPosition(currentWirePosition, wireConnections[2])
+        else :
+            print("ERROR in writeCrossingWireToTable")
+            return 0
+        
+        if currentWirePosition == 8 :
+            break
+    return updatedLookupTablePosition
+
 def generate2in2outCROSSING(outputfile) :
     lookupTableForFile = []
     for directionIn1 in DIRECTIONS :
-        
+        for i in range(20) :
+            lookupTableForFile.append("")
+        for directionOut1 in DIRECTIONS :
+            if directionOut1 != directionIn1 :
+                for directionIn2 in DIRECTIONS :
+                    if directionIn2 != directionIn1 and directionIn2 != directionOut1 :
+                        for directionOut2 in DIRECTIONS :
+                            if directionOut2 != directionIn1 and directionOut2 != directionIn2 and directionOut2 != directionOut1 :
+                                if checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut1),int(directionOut2)) :
+                                    # Prepare programm inputs
+                                    gate = "CROSSING" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
+                                    outputWires = directionOut1 + directionOut2
+                                    inputWires = directionIn1 + directionIn2
+                                    args = ("./supertile_layout_generator", "-r", gate, inputWires, outputWires)
 
+                                    # Execute programm and read output
+                                    executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
+                                    executed_binary.wait()
+                                    programOutput = executed_binary.stdout.read().decode().split(", ")
 
+                                    # prepare lookup table entry for this gate
+                                    lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
+
+                                    # write wire 1
+                                    print(inputWires)
+                                    print(outputWires)
+                                    print(programOutput)
+                                    updatedStartPosition = writeCrossingWireToTable(lookupTableForSupertile, programOutput, int(directionIn1), 0)
+                                    updatedStartPosition += 1 # to insert dividing EMPTY
+
+                                    # write wire 2
+                                    writeCrossingWireToTable(lookupTableForSupertile, programOutput, int(directionIn2), updatedStartPosition)
+
+                                    # Add array entry
+                                    lookupTableForFile[perfectHashFunction22(int(directionIn1), int(directionOut1), int(directionIn2), int(directionOut2))] = lookupTableForSupertile
+
+    # Write array to file
+    outputFile.write('\n//TODO check if 10 slots are really required, maybe I can change the core generation to reduce that')
+    writeTableStart(outputFile, 120, 11, 'lookup_table_2in1out')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
+    
 def generate2in1out(outputFile) :
     lookupTableForFile = []
     for directionOut in DIRECTIONS :# Represents the output wire
@@ -401,10 +445,6 @@ def generate2in1out(outputFile) :
                         updatedStartPosition += 1 # to insert dividing EMPTY
                         updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn2), updatedStartPosition)
                         updatedStartPosition += 1 # to insert dividing EMPTY
-                        
-                        # write core
-                            # lookupTableForSupertile[updatedStartPosition] = coreLookup(programOutput[0]) actually not required, redundant information
-                            # updatedStartPosition += 1
 
                         # write output wire
                         writeOutputPathToTable(lookupTableForSupertile, programOutput, int(programOutput[0][-1]), updatedStartPosition)
@@ -412,7 +452,6 @@ def generate2in1out(outputFile) :
                         # Add array entry
                         lookupTableForFile[perfectHashFunction21(int(directionOut), int(directionIn1), int(directionIn2))] = lookupTableForSupertile
                         
-
     # Write array to file
     writeTableStart(outputFile, 60, 9, 'lookup_table_2in1out')
     writeTable(outputFile, lookupTableForFile)
@@ -445,10 +484,6 @@ def generate1in2out(outputFile) :
                         # write intput wire
                         updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
                         updatedStartPosition += 1 # to insert dividing EMPTY
-                        
-                        # write core
-                            # lookupTableForSupertile[updatedStartPosition] = ["7", str(programOutput[0][-1])] actually not required, redundant information
-                            # updatedStartPosition += 1
 
                         # write output wires
                         if int(programOutput[0][-1]) == 2 or int(programOutput[0][-1]) == 3 :
@@ -495,7 +530,7 @@ def generate1in1outWIRE(outputFile) :
                 updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
 
                 # write core
-                lookupTableForSupertile[updatedStartPosition] = ["7", directionIn]
+                lookupTableForSupertile[updatedStartPosition] = "7"
                 updatedStartPosition += 1
                 
                 # write output wire
@@ -509,17 +544,6 @@ def generate1in1outWIRE(outputFile) :
     writeTableStart(outputFile, 30, 3, 'lookup_table_1in1out_WIRE')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
-
-def getInverterCore(programOutput) :
-    match programOutput[0][-3] :
-        case "0" :
-            return ["7","0"]
-        case "2" :
-            return ["7","2"]
-        case "3" :
-            return ["7","3"]
-        case "5" :
-            return ["7","5"]
 
 def generate1in1outINVERTER(outputFile) :
     lookupTableForFile = []
@@ -543,10 +567,6 @@ def generate1in1outINVERTER(outputFile) :
                 # write input wire
                 updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
                 updatedStartPosition += 1 # to insert dividing EMPTY
-
-                # write core
-                    # lookupTableForSupertile[updatedStartPosition] = getInverterCore(programOutput) actually not required, redundant information
-                    # updatedStartPosition += 1
 
                 # write output wire
                 writeOutputPathToTable(lookupTableForSupertile, programOutput, int(programOutput[0][-1]), updatedStartPosition)
@@ -580,7 +600,7 @@ def generate1in0out(outputFile) :
             updatedStartPosition = writeInputPathToTable(lookupTableForSupertile, programOutput, int(directionIn), 0)
 
             # write core
-            lookupTableForSupertile[updatedStartPosition] = ["7", directionIn]
+            lookupTableForSupertile[updatedStartPosition] = "7"
 
             # Add array entry
             lookupTableForFile[perfectHashFunction10(int(directionIn))] = lookupTableForSupertile
@@ -600,7 +620,7 @@ def generate0in1out(outputFile) :
             lookupTableForSupertile = [EMPTY]
 
             # write output wire
-            lookupTableForSupertile[0] = [directionOut,"-1"]
+            lookupTableForSupertile[0] = directionOut
 
             # Add array entry
             lookupTableForFile[perfectHashFunction10(int(directionOut))] = lookupTableForSupertile
