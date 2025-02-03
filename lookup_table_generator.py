@@ -36,7 +36,7 @@ def directionLookup(direction: str) :
         case "5" :
             return "NW"
         case "7" :
-            return "CORE"
+            return "C"
         case _ :
             print("ERROR in directionLookup")
             return direction
@@ -272,7 +272,7 @@ def writeOutputPathToTable(lookupTableForSupertile, programOutput, outputPositio
     return updatedLookupTablePosition
 
 def writeTableStart(outputFile, totalSize, supertileSize, name) :
-    outputFile.write('\nstatic constexpr const std::array<std::array<hex_direction,' + str(supertileSize) + '>,' + str(totalSize) + '> ' + name + ' = {{\n')
+    outputFile.write('\nconstexpr const std::array<std::array<hex_direction,' + str(supertileSize) + '>,' + str(totalSize) + '> ' + name + ' = {{\n')
 
 def writeTable(outputFile, table) :
     outputFile.write('{{')
@@ -411,7 +411,7 @@ def generate2in2outCROSSING(outputfile) :
                                     lookupTableForFile[perfectHashFunction22(int(directionIn1), int(directionOut1), int(directionIn2), int(directionOut2))] = lookupTableForSupertile
 
     # Write array to file
-    writeTableStart(outputFile, 120, 10, 'lookup_table_2in2out')
+    writeTableStart(outputFile, 120, 10, 'lookup_table_2in2out_CROSSING')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
     
@@ -633,7 +633,7 @@ def generate0in1out(outputFile) :
 # Start of programm:
 
 outputFile = open(r"supertile_lookup_tables.hpp", "w")
-outputFile.write('#include <array>\n#include <cstdint>\n\nenum hex_direction {\n    NE = 0,\n    E = 1,\n    SE = 2,\n    SW = 3,\n    W = 4,\n    NW = 5,\n    X = 6,\n    CORE = 7\n};\n')
+outputFile.write('#include <array>\n#include <cstdint>\n\nenum hex_direction {\n    NE = 0,\n    E = 1,\n    SE = 2,\n    SW = 3,\n    W = 4,\n    NW = 5,\n    X = 6,\n    C = 7\n};\n')
 
 generate2in1out(outputFile)
 generate1in2out(outputFile)
