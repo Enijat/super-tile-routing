@@ -7,9 +7,9 @@ const char* helpMessage =
     "    %s core-gate-type input-positions output-positions\n"
     "  Positional arguments:\n"
     "    core-gate-type        The name of the gate in the center. Example: OR\n"
-    "    input-positions       The positions of the required input positions to the super-tile. Example: 05\n"
+    "    input-positions       The positions of the required input positions to the super-tile.\n"
     "                          (if the core gate type CROSSING is chosen, the order is important, the first input will connect to the first output, etc.)\n"
-    "    output-positions      The positions of the required output positions from the super-tile. Example: 2\n"
+    "    output-positions      The positions of the required output positions from the super-tile.\n"
     "                          (if the core gate type CROSSING is chosen, the order is important, the first output will connect to the first input, etc.)\n"
     "  Optional arguments:\n"
     "    -h                    Prints (this) help message.\n"
@@ -76,8 +76,8 @@ enum wireType {
 enum wire {
     empty = 0, //in case there is no wire needed in this part of the super tile
     wire01 = 1, wire02 = 2, wire03 = 4, wire04 = 8, wire05 = 16, wire12 = 32, wire13 = 64, wire14 = 128, wire15 = 256, wire23 = 512, wire24 = 1024, wire25 = 2048, wire34 = 4096, wire35 = 8192, wire45 = 16384, //standard wires
-    wire14_23 = 640, wire25_34 = 6144, wire03_45 = 16388, wire14_05 = 144, wire25_01 = 2049, wire03_12 = 36, //double wires with one straight wire     TODO actually test these / construct them, currently it is just assumed they would work
-    wire12_34 = 4128, wire23_45 = 16896, wire34_05 = 4112, wire45_01 =16385, wire05_12 = 48, wire01_23 = 513 //double wires with two bend wires        TODO actually test these / construct them, currently it is just assumed they would work
+    wire14_23 = 640, wire25_34 = 6144, wire03_45 = 16388, wire14_05 = 144, wire25_01 = 2049, wire03_12 = 36, //double wires with one straight wire
+    wire12_34 = 4128, wire23_45 = 16896, wire34_05 = 4112, wire45_01 =16385, wire05_12 = 48, wire01_23 = 513 //double wires with two bend wires
 };
 
 //Section for defining methods
@@ -109,7 +109,6 @@ void printWirePaths(wireType**, gate*);
 void freeGate(gate*);
 
 //TODO generally replace int with to locally shortest required variant, like uint8_t DON'T FORGET TO CHANGE THE SIZEOF IN MALLOC FOR THAT!!
-//TODO maybe reduce the amount of times the full help message get's automatically printed
 //TODO bei der benennung von gates / outergates / tiles / wires konsistent werden
 //TODO im ganzen Programm sind viele checks die davon ausgehen das andere methode quatsch machen könnten, die könnte man für performance los werden
 int main(int argc, char** argv)
@@ -1113,15 +1112,25 @@ gate* getXCore(int* inPositions, int* outPositions) {
                 if (out1 == 2 && out2 == 3) {
                     core->inPositions[0] = 5;
                     core->inPositions[1] = 0;
+                } else {
+                    core->inPositions[0] = 0;
+                    core->inPositions[1] = 2;
                 }
-                //TODO continue here
                 break;
             case 2:
+                core->inPositions[0] = 0;
+                core->inPositions[1] = 2;
                 break;
             case 3:
+                if (out1 == 2) {
+                    core->inPositions[0] = 5;
+                    core->inPositions[1] = 3;
+                } else { //out1 == 4
+                    core->inPositions[0] = 0;
+                    core->inPositions[1] = 2;
+                }
                 break;
             case 4:
-                break;
             case 5:
                 core->inPositions[0] = 0;
                 core->inPositions[1] = 5;
@@ -1130,48 +1139,72 @@ gate* getXCore(int* inPositions, int* outPositions) {
         break;
     case 1:
         switch (in2) {
-        case 0:
-            core->inPositions[0] = 2;
-            core->inPositions[1] = 0;
-            break;
-        case 2:
-            core->inPositions[0] = 0;
-            core->inPositions[1] = 2;
-            break;
-        case 3:
-            core->inPositions[0] = 2;
-            core->inPositions[1] = 3;
-            break;
-        case 4:
-            if (out1 == 5) {
+            case 0:
+                if (out1 == 3 && out2 == 2) {
+                    core->inPositions[0] = 0;
+                    core->inPositions[1] = 5;
+                } else {
+                    core->inPositions[0] = 2;
+                    core->inPositions[1] = 0;
+                }
+                break;
+            case 2:
+                if (out1 == 5 && out2 == 0) {
+                    core->inPositions[0] = 2;
+                    core->inPositions[1] = 3;
+                } else {
+                    core->inPositions[0] = 0;
+                    core->inPositions[1] = 2;
+                }
+                break;
+            case 3:
                 core->inPositions[0] = 2;
                 core->inPositions[1] = 3;
-            } else { // out1 == 3
+                break;
+            case 4:
+                if (out1 == 5) {
+                    core->inPositions[0] = 2;
+                    core->inPositions[1] = 3;
+                } else { // out1 == 3
+                    core->inPositions[0] = 0;
+                    core->inPositions[1] = 5;
+                }
+                break;
+            case 5:
                 core->inPositions[0] = 0;
                 core->inPositions[1] = 5;
+                break;
             }
-            break;
-        case 5:
-            core->inPositions[0] = 0;
-            core->inPositions[1] = 5;
-            break;
-        }
         break;
     case 2:
-        if (inPositions[1] == 1 || inPositions[1] == 0) { //split up again
-            core->inPositions[0] = 2;
-            core->inPositions[1] = 0;
-        } else if (inPositions[1] == 5) {
-            if (outPositions[1] == 3) {
-                core->inPositions[0] = 0;
-                core->inPositions[1] = 5;
-            } else { // outPositions[1] == 1
+        switch (in2) {
+            case 0:
+                core->inPositions[0] = 2;
+                core->inPositions[1] = 0;
+                break;
+            case 1:
+                if (out1 == 0 && out2 == 5) {
+                    core->inPositions[0] = 3;
+                    core->inPositions[1] = 2;
+                } else {
+                    core->inPositions[0] = 2;
+                    core->inPositions[1] = 0;
+                }
+                break;
+            case 3:
+            case 4:
                 core->inPositions[0] = 2;
                 core->inPositions[1] = 3;
-            }
-        } else {
-            core->inPositions[0] = 2;
-            core->inPositions[1] = 3;
+                break;
+            case 5:
+                if (out1 == 4) {
+                    core->inPositions[0] = 2;
+                    core->inPositions[1] = 0;
+                } else { //out1 == 0
+                    core->inPositions[0] = 3;
+                    core->inPositions[1] = 5;
+                }
+                break;
         }
         break;
     }
@@ -1213,7 +1246,6 @@ superTile* solver2in2outCROSSING(int* inPositions, int* outPositions, bool print
     }
 
     gate* core = getXCore(inPositions, outPositions);
-    std::cout << "Core information (in1,in2,ou1,ou2): " << core->inPositions[0] << core->inPositions[1] << core->outPositions[0] << core->outPositions[1] << std::endl;// TODO remove
     core->name = "CROSSING";
 
     //Connect inputs
@@ -1592,7 +1624,7 @@ bool getWireTile(int* connectionPositions, int tile, gate* wireGate) {
             int trueSecondB = (connectionPositions[3] + (tile + 1)) % 6;
             int trueSecondCombi = trueSecondA * 10 + trueSecondB;
 
-            wire secondWire = empty; //TODO empty should be removable, but 
+            wire secondWire = empty;
             switch (trueSecondCombi) //TODO maybe makes this switch it's own method to have cleaner code
                                      //TODO maybe sort the wire bevorehand to have less cases and more optimal code ?!
             {

@@ -107,6 +107,9 @@ def wireLookup(wireName: str) :
             return [100, 100, 100, 100]
 
 def perfectHashFunction22(in1, out1, in2, out2) :
+    out1 = (out1 - in1) % 6
+    in2 = (in2 - in1) % 6
+    out2 = (out2 - in1) % 6
     if in2 * out2 == 8 :
         basicResult = 17
     else :
@@ -395,12 +398,9 @@ def generate2in2outCROSSING(outputfile) :
                                     programOutput = executed_binary.stdout.read().decode().split(", ")
 
                                     # prepare lookup table entry for this gate
-                                    lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
+                                    lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
 
                                     # write wire 1
-                                    print(inputWires)
-                                    print(outputWires)
-                                    print(programOutput)
                                     updatedStartPosition = writeCrossingWireToTable(lookupTableForSupertile, programOutput, int(directionIn1), 0)
                                     updatedStartPosition += 1 # to insert dividing EMPTY
 
@@ -411,8 +411,7 @@ def generate2in2outCROSSING(outputfile) :
                                     lookupTableForFile[perfectHashFunction22(int(directionIn1), int(directionOut1), int(directionIn2), int(directionOut2))] = lookupTableForSupertile
 
     # Write array to file
-    outputFile.write('\n//TODO check if 10 slots are really required, maybe I can change the core generation to reduce that')
-    writeTableStart(outputFile, 120, 11, 'lookup_table_2in1out')
+    writeTableStart(outputFile, 120, 10, 'lookup_table_2in2out')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
     
@@ -627,7 +626,7 @@ def generate0in1out(outputFile) :
 
     # Write array to file
     outputFile.write('\n//Trivial, so it\'s not actually used')
-    writeTableStart(outputFile, 6, 2, 'lookup_table_0in1out')
+    writeTableStart(outputFile, 6, 1, 'lookup_table_0in1out')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
 
