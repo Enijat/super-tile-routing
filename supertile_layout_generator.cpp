@@ -1371,7 +1371,117 @@ superTile* solver2in2outCROSSING(int* inPositions, int* outPositions, bool print
 }
 
 superTile* solver2in2outBYPASS(int* inPositions, int* outPositions, bool printTheWirePaths) {
-    return NULL;//TODO continue
+    /** Matrix structure: Each (triple) represents one tile, and the respective [tree numbers] represent the core-connection, the next-clockwise-tile-connection and the outwards-connection, see diagram:
+     * 
+     *         ˍ---¯ ¯[2]ˍ ˍ---¯ ¯---ˍ
+     *        |       /   |           |
+     *        |    (5) --[1]   (0) --[2]
+     *        |       \   |   /   \   |
+     *   ˍ[2]¯ ¯[1]ˍ ˍ[0]¯ ¯[0]ˍ ˍ[1]¯ ¯---ˍ
+     *  |   \   /   |           |           |
+     *  |    (4) --[0]   Core  [0]-- (1)    |
+     *  |           |           |   /   \   |
+     *   ¯---ˍ ˍ[1]¯ ¯[0]ˍ ˍ[0]¯ ¯[1]ˍ ˍ[2]¯
+     *        |   \   /   |   \       |
+     *       [2]-- (3)   [1]-- (2)    |
+     *        |           |   /       |
+     *         ¯---ˍ ˍ---¯ ¯[2]ˍ ˍ---¯
+     */
+    wireType** outerTiles = (wireType**) malloc(sizeof(wireType*)*6);
+    for (int x = 0; x < 6; x++) {
+        outerTiles[x] = (wireType*) malloc(sizeof(wireType)*3);
+        for (int y = 0; y < 3; y++) {
+            outerTiles[x][y] = NaW;
+        }
+    }
+
+    gate* core = (gate*) malloc(sizeof(gate));
+    core->outPositionsSize = 0;
+    core->inPositionsSize = 0;
+    core->name = "BYPASS"; // Core is not actually used, but this is required for the reduced output later on
+
+    //Connect wire 1
+    outerTiles[inPositions[0]][2] = in1;
+    outerTiles[outPositions[0]][2] = in1;
+    int currentPos = inPositions[0];
+    if (goClockwise(inPositions[0], outPositions[0], outPositions[1])) {
+        do {
+            outerTiles[currentPos][1] = in1;
+            currentPos = (currentPos + 1) % 6;
+        } while (currentPos != outPositions[0]);
+    } else {
+        do {
+            currentPos = mod((currentPos - 1), 6);
+            outerTiles[currentPos][1] = in1;
+        } while (currentPos != outPositions[0]);
+    }
+
+    //Connect wire 2
+    outerTiles[inPositions[1]][2] = in2;
+    outerTiles[outPositions[1]][2] = in2;
+    currentPos = inPositions[1];
+    if (goClockwise(inPositions[1], outPositions[1], outPositions[0])) {
+        do {
+            outerTiles[currentPos][1] = in2;
+            currentPos = (currentPos + 1) % 6;
+        } while (currentPos != outPositions[1]);
+    } else {
+        do {
+            currentPos = mod((currentPos - 1), 6);
+            outerTiles[currentPos][1] = in2;
+        } while (currentPos != outPositions[1]);
+    }
+
+    if (printTheWirePaths) {
+        printWirePaths(outerTiles, core); //Can be use for debugging
+    }
+
+    superTile* super = (superTile*) malloc(sizeof(superTile));
+    super->core = core;
+    super->wires = (gate**) malloc(sizeof(gate*)*6);
+
+    //Get the wire-gates which are required on the outside
+    for (int currentGate = 0; currentGate < 6; currentGate++) {
+        int* currentWirePositions = getWireTileConnections(outerTiles, currentGate);
+        if (currentWirePositions == NULL) {
+            for (int x = 0; x < 6; x++) {
+                free(outerTiles[x]);
+            }
+            free(outerTiles);
+            for (int x = 0; x < currentGate; x++) {
+                free(super->wires[x]);
+            }
+            free(super);
+            return NULL;
+        }
+
+        gate* wireGate = (gate*) malloc(sizeof(gate));
+    
+        if (getWireTile(currentWirePositions, currentGate, wireGate)) {
+            printf("A wire gate is required that is not yet implemented.\n");
+            for (int x = 0; x < 6; x++) {
+                free(outerTiles[x]);
+            }
+            free(outerTiles);
+            for (int x = 0; x < currentGate; x++) {
+                free(super->wires[x]);
+            }
+            free(super);
+            free(wireGate);
+            free(currentWirePositions);
+            return NULL;
+        }
+        free(currentWirePositions);
+
+        super->wires[currentGate] = wireGate;
+    }
+
+    for (int x = 0; x < 6; x++) {
+        free(outerTiles[x]);
+    }
+    free(outerTiles);
+
+    return super;
 }
 
 bool goClockwise(int start, int end, int blocker) {
@@ -1996,6 +2106,8 @@ void printReducedLayout(superTile* layout) {
                 coreName += "_Unknown core orientation";
                 break;
         }
+    } else if (!strcmp(layout->core->name, "BYPASS")) {
+        // Do nothing
     } else if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) { // Used to identify the core gates based on their output direction, not required for wires since they are specified already
         switch (layout->core->outPositions[0]) {
             case 3:

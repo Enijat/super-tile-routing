@@ -414,6 +414,47 @@ def generate2in2outCROSSING(outputfile) :
     writeTableStart(outputFile, 120, 10, 'lookup_table_2in2out_CROSSING')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
+
+def generate2in2outBYPASS(outputfile) :
+    lookupTableForFile = []
+    for directionIn1 in DIRECTIONS :
+        for i in range(20) :
+            lookupTableForFile.append("")
+        for directionOut1 in DIRECTIONS :
+            if directionOut1 != directionIn1 :
+                for directionIn2 in DIRECTIONS :
+                    if directionIn2 != directionIn1 and directionIn2 != directionOut1 :
+                        for directionOut2 in DIRECTIONS :
+                            if directionOut2 != directionIn1 and directionOut2 != directionIn2 and directionOut2 != directionOut1 :
+                                if not checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut1),int(directionOut2)) :
+                                    # Prepare programm inputs
+                                    gate = "BYPASS" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
+                                    outputWires = directionOut1 + directionOut2
+                                    inputWires = directionIn1 + directionIn2
+                                    args = ("./supertile_layout_generator", "-r", gate, inputWires, outputWires)
+
+                                    # Execute programm and read output
+                                    executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
+                                    executed_binary.wait()
+                                    programOutput = executed_binary.stdout.read().decode().split(", ")
+
+                                    # prepare lookup table entry for this gate
+                                    lookupTableForSupertile = [EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY]
+
+                                    # write wire 1
+                                    updatedStartPosition = writeCrossingWireToTable(lookupTableForSupertile, programOutput, int(directionIn1), 0)
+                                    updatedStartPosition += 1 # to insert dividing EMPTY
+
+                                    # write wire 2
+                                    writeCrossingWireToTable(lookupTableForSupertile, programOutput, int(directionIn2), updatedStartPosition)
+
+                                    # Add array entry
+                                    lookupTableForFile[perfectHashFunction22(int(directionIn1), int(directionOut2), int(directionIn2), int(directionOut1))] = lookupTableForSupertile
+
+    # Write array to file
+    writeTableStart(outputFile, 120, 7, 'lookup_table_2in2out_BYPASS')
+    writeTable(outputFile, lookupTableForFile)
+    writeTableEnd(outputFile)
     
 def generate2in1out(outputFile) :
     lookupTableForFile = []
@@ -642,5 +683,6 @@ generate1in1outINVERTER(outputFile)
 generate1in0out(outputFile)
 generate0in1out(outputFile)
 generate2in2outCROSSING(outputFile)
+generate2in2outBYPASS(outputFile)
 
 outputFile.close()
