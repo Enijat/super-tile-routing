@@ -14,7 +14,7 @@ const char* helpMessage =
     "  Optional arguments:\n"
     "    -h                    Prints (this) help message.\n"
     "    -l                    Prints a more detailed layout with the naming system.\n"
-    "    -c                    Prints list with possible core gates.\n"
+    "    -c                    Prints list with possible original gates.\n"
     "    -t                    Print out the time it took to calculate the layout, if a layout is generated.\n"
     "    -p                    Print the wire paths for better visualisation, this will HEAVILY impact the measured time for the layout calculation, which is show by -t\n"
     "    -r                    Prints a reduced output, usefull for further processing. The order of the gates is:\n"
@@ -23,7 +23,7 @@ const char* helpMessage =
     "    %s BLG 40 2 -t\n"
     "    (This generates a tile-layout with an or-gate in the middle and the two super-tile-inputs 4 and 0 and the super-tile-output 2,\n"
     "     while recording and displaying the time it took to calculate this layout)\n"
-    "  Naming system for the tiles in a super tile:\n"
+    "  Naming system the available directions for inputs and outputs:\n"
     "         5    0\n"
     "       4  Core  1\n"
     "         3    2\n"
@@ -274,7 +274,7 @@ void printCoreGateList() {
             "    Inverter\n"
             "    Crossing    Note: If the passed paths aren't actually crossing, unexpected behaviour may happen.\n"
             "    Bypass      Note: If the passed paths aren't actually passing by each other, unexpected behaviour may happen.\n"
-            "    PInput      short for 'primary input',Note: If this core is chosen, the argument output-positions is ignored.\n");
+            "    PInput      short for 'primary input', Note: If this core is chosen, the argument output-positions is ignored.\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
@@ -1405,7 +1405,7 @@ superTile* solver2in2outBYPASS(int* inPositions, int* outPositions, bool printTh
     gate* core = (gate*) malloc(sizeof(gate));
     core->outPositionsSize = 0;
     core->inPositionsSize = 0;
-    core->name = "BYPASS"; // Core is not actually used, but this is required for the reduced output later on
+    core->name = "Bypass"; // Core is not actually used, but this is required for the reduced output later on
 
     //Connect wire 1
     outerTiles[inPositions[0]][2] = in1;
@@ -1552,6 +1552,7 @@ int mod(int k, int n) {
 }
 
 //Returns NULL when error happens
+//Returns input and output positions, sorted by their connection, for the selected tile, generated from the general wire positions specified by outerTiles.
 int* getWireTileConnections(wireType** outerTiles, int tile) {
     //get Positions for each wire (the positions 0 to 3 numbered clockwise, starting with 0 for the position of the connections to another supertile)
     //                            (this makes the calculations in getWireTile() easier)
@@ -1835,7 +1836,7 @@ bool giveWireGateName(wire wireName, gate* wireGate) {
     switch (wireName)
     {
     case empty:
-        wireGate->name = "empty";
+        wireGate->name = "-";
         return true;
     case wire01:
         wireGate->name = "wire01";
@@ -1986,7 +1987,7 @@ void printLayout(superTile* finishedLayout) {
     setNormalisedString(finishedLayout->core->name, name);
     setNormalisedNumbers(finishedLayout->core->inPositions, finishedLayout->core->inPositionsSize, inputs);
     setNormalisedNumbers(finishedLayout->core->outPositions, finishedLayout->core->outPositionsSize, outputs);
-    printf("   ˍ---¯ ¯---ˍ ˍ---¯ ¯---ˍ ˍ---¯ ¯---ˍ        (Core)     | %s| %s| %s\n", name, inputs, outputs);
+    printf("   ˍ---¯ ¯---ˍ ˍ---¯ ¯---ˍ ˍ---¯ ¯---ˍ        (Core)     | %s| %s| %s\n", !strcmp(finishedLayout->core->name, "Bypass")?("-         "):(name), inputs, outputs);
     setNormalisedString(finishedLayout->wires[0]->name, name);
     setNormalisedNumbers(finishedLayout->wires[0]->inPositions, finishedLayout->wires[0]->inPositionsSize, inputs);
     setNormalisedNumbers(finishedLayout->wires[0]->outPositions, finishedLayout->wires[0]->outPositionsSize, outputs);
@@ -2113,7 +2114,7 @@ void printReducedLayout(superTile* layout) {
                 coreName += "_Unknown core orientation";
                 break;
         }
-    } else if (!strcmp(layout->core->name, "BYPASS")) {
+    } else if (!strcmp(layout->core->name, "Bypass")) {
         // Do nothing
     } else if (std::string::npos == (coreName.find("wire")) && std::string::npos == (coreName.find("WIRE"))) { // Used to identify the core gates based on their output direction, not required for wires since they are specified already
         switch (layout->core->outPositions[0]) {

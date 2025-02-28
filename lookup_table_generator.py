@@ -43,7 +43,7 @@ def directionLookup(direction: str) :
 
 def wireLookup(wireName: str) :
     match wireName :
-        case "empty" :
+        case "-" :
             return [99, 99, 99, 99]
         # Standard wires:
         case "wire01" :
