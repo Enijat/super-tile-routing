@@ -4,13 +4,13 @@
 
 const char* helpMessage =
     "Program usage:\n"
-    "    %s core-gate-type input-positions output-positions\n"
+    "    %s original-gate-type input-positions output-positions\n"
     "  Positional arguments:\n"
-    "    core-gate-type        The name of the gate in the center. Example: OR\n"
+    "    original-gate-type        The name of the gate in the center.\n"
     "    input-positions       The positions of the required input positions to the super-tile.\n"
-    "                          (if the core gate type CROSSING is chosen, the order is important, the first input will connect to the first output, etc.)\n"
+    "                          (if the original gate type Bypass or Crossing is chosen, the order is important, the first input will connect to the first output, etc.)\n"
     "    output-positions      The positions of the required output positions from the super-tile.\n"
-    "                          (if the core gate type CROSSING is chosen, the order is important, the first output will connect to the first input, etc.)\n"
+    "                          (if the origianl gate type Bypass or Crossing is chosen, the order is important, the first output will connect to the first input, etc.)\n"
     "  Optional arguments:\n"
     "    -h                    Prints (this) help message.\n"
     "    -l                    Prints a more detailed layout with the naming system.\n"
@@ -20,7 +20,7 @@ const char* helpMessage =
     "    -r                    Prints a reduced output, usefull for further processing. The order of the gates is:\n"
     "                          [Core, 0, 1, 2, 3, 4, 5]\n"
     "  Example:\n"
-    "    %s OR 40 2 -t\n"
+    "    %s BLG 40 2 -t\n"
     "    (This generates a tile-layout with an or-gate in the middle and the two super-tile-inputs 4 and 0 and the super-tile-output 2,\n"
     "     while recording and displaying the time it took to calculate this layout)\n"
     "  Naming system for the tiles in a super tile:\n"
@@ -159,7 +159,7 @@ int main(int argc, char** argv)
     //Get positional Arguments
     int position = optind;
     if(position >= argc) {
-        printf("Missing positional argument 'core-gate-type'! For more info, add optional argument -h.\n");
+        printf("Missing positional argument 'original-gate-type'! For more info, add optional argument -h.\n");
         return EXIT_FAILURE;
     }
     char* coreName = argv[position];
@@ -206,24 +206,24 @@ int main(int argc, char** argv)
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver2in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-    } else if (inPositionsSize == 1 && outPositionsSize == 1 && strcmp(coreName, "INPUT")) {
+    } else if (inPositionsSize == 1 && outPositionsSize == 1 && strcmp(coreName, "PInput")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver1in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-    } else if (inPositionsSize == 1 && !strcmp(coreName, "INPUT")) {
+    } else if (inPositionsSize == 1 && !strcmp(coreName, "PInput")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver1in0out(inPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-    } else if (inPositionsSize == 2 && outPositionsSize == 2 && !strcmp(coreName, "CROSSING")) {
+    } else if (inPositionsSize == 2 && outPositionsSize == 2 && !strcmp(coreName, "Crossing")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver2in2outCROSSING(inPositions, outPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-    } else if (inPositionsSize == 2 && outPositionsSize == 2 && !strcmp(coreName, "BYPASS")) {
+    } else if (inPositionsSize == 2 && outPositionsSize == 2 && !strcmp(coreName, "Bypass")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver2in2outBYPASS(inPositions, outPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
     } else {
-        printf("There has been no solver implemented for a core gate with %i inputs and %i outputs or you have a typo in the core-gate name. For more info, add optional argument -h.\n", inPositionsSize, outPositionsSize);
+        printf("There has been no solver implemented for a original gate with %i inputs and %i outputs or you have a typo in the original-gate name. For more info, add optional argument -h.\n", inPositionsSize, outPositionsSize);
         free(inPositions);
         free(outPositions);
         return EXIT_SUCCESS;
@@ -267,7 +267,14 @@ void printLayoutExplanation() {
 
 //TODO change the gate list to lookup from file or move the list to the top and use it here.
 void printCoreGateList() {
-    printf("Core gate List:\n    OR\n    SAMPLE\n    WIRE\n    INPUT     (if this core is chosen, the given output is ignored)\n    INVERTER\n    CROSSING  (if the inputs aren't actually crossing, unexpected behaviour may happen)\n    BYPASS    (if the inputs aren't actually passing by each other, unexpected behaviour may happen)\n");
+    printf("Available original gate options:\n"
+            "    BLG         short for 'Basic logic gate'\n"
+            "    BLGR        short for 'Basic logic gate (restricted)', Note: This version will utilize a reduced set of potential core gates.\n"
+            "    Wire\n"
+            "    PInput      short for 'primary input',Note: If this core is chosen, the argument output-positions is ignored.\n"
+            "    Inverter\n"
+            "    Crossing    Note: If the passed paths aren't actually crossing, unexpected behaviour may happen.\n"
+            "    Bypass      Note: If the passed paths aren't actually passing by each other, unexpected behaviour may happen.\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
@@ -307,7 +314,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
 
     //TODO Liste von Cores hinzufügen und diese auch nutzen um Hilfsnachricht entsprechend an zu passen.
     //TODO This is a placeholder, in the future an actual lookup has to happen and it would be wise to check if the given core has to required amount of in/out connections
-    if (!strcmp(coreName, "OR")) {
+    if (!strcmp(coreName, "BLGR")) {
         core = getYCoreUpright(inPositions, outPosition);
         if (core == NULL) {
             printf("There is no core gate orientation that would generate a possible layout.\n");
@@ -405,7 +412,7 @@ superTile* solver2in1out(int* inPositions, int* outPosition, char* coreName, boo
         }
 
         //TODO ^^^^^^ ############################### this has been copied from below, needs refactoring and cleanup ############################### ^^^^^^
-    } else if (!strcmp(coreName, "SAMPLE")) {
+    } else if (!strcmp(coreName, "BLG")) {
         //Get best fitting core rotation
         core = getYCore(inPositions, outPosition);
         core->name = coreName;
@@ -791,7 +798,7 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
 
     gate* core;
 
-    if (!strcmp(coreName, "WIRE")) {
+    if (!strcmp(coreName, "Wire")) {
         //Get best fitting core rotation
         core = (gate*) malloc(sizeof(gate));
         core->outPositions = (int*) malloc(sizeof(int)*1);
@@ -815,7 +822,7 @@ superTile* solver1in1out(int* inPosition, int* outPosition, char* coreName, bool
         //Connect input
         outerTiles[core->inPositions[0]][0] = in1;
         outerTiles[inPosition[0]][2] = in1;
-    } else if (!strcmp(coreName, "INVERTER")) {
+    } else if (!strcmp(coreName, "Inverter")) {
         //Get best fitting core rotation
         core = getICore(inPosition, outPosition);
         core->name = coreName;
@@ -2036,7 +2043,7 @@ void setNormalisedNumbers(int* positions, int positionsSize, char* normalised) {
 void printReducedLayout(superTile* layout) {
     std::string coreName = layout->core->name;
 
-    if (!strcmp(layout->core->name, "INVERTER")) {
+    if (!strcmp(layout->core->name, "Inverter")) {
         switch (layout->core->inPositions[0]) {
             case 3:
                 coreName += "_3";

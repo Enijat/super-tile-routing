@@ -387,7 +387,7 @@ def generate2in2outCROSSING(outputfile) :
                             if directionOut2 != directionIn1 and directionOut2 != directionIn2 and directionOut2 != directionOut1 :
                                 if checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut1),int(directionOut2)) :
                                     # Prepare programm inputs
-                                    gate = "CROSSING" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
+                                    gate = "Crossing"
                                     outputWires = directionOut1 + directionOut2
                                     inputWires = directionIn1 + directionIn2
                                     args = ("./supertile_layout_generator", "-r", gate, inputWires, outputWires)
@@ -428,7 +428,7 @@ def generate2in2outBYPASS(outputfile) :
                             if directionOut2 != directionIn1 and directionOut2 != directionIn2 and directionOut2 != directionOut1 :
                                 if not checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut1),int(directionOut2)) :
                                     # Prepare programm inputs
-                                    gate = "BYPASS" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
+                                    gate = "Bypass"
                                     outputWires = directionOut1 + directionOut2
                                     inputWires = directionIn1 + directionIn2
                                     args = ("./supertile_layout_generator", "-r", gate, inputWires, outputWires)
@@ -467,7 +467,7 @@ def generate2in1out(outputFile) :
                 for directionIn2 in DIRECTIONS : # Represents the second input wire
                     if directionIn2 != directionOut and directionIn2 != directionIn1 and int(directionIn2) > int(directionIn1) :
                         # Prepare programm inputs
-                        gate = "SAMPLE" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
+                        gate = "BLG"
                         outputWire = directionOut
                         inputWires = directionIn1 + directionIn2
                         args = ("./supertile_layout_generator", "-r", gate, inputWires, outputWire)
@@ -508,7 +508,7 @@ def generate1in2out(outputFile) :
                 for directionOut2 in DIRECTIONS : # Represents the second input wire
                     if directionOut2 != directionIn and directionOut2 != directionOut1 and int(directionOut2) > int(directionOut1) :
                         # Prepare programm inputs
-                        gate = "SAMPLE" # fixed to sample as an input because this allows for all four required core gate rotations which every gate, that will be used, can be represented in
+                        gate = "BLG"
                         inputWire = directionIn
                         outputWires = directionOut1 + directionOut2
                         args = ("./supertile_layout_generator", "-r", gate, outputWires, inputWire)
@@ -555,7 +555,7 @@ def generate1in1outWIRE(outputFile) :
         for directionIn in DIRECTIONS :# Represents the input wire
             if directionIn != directionOut :
                 # Prepare programm inputs
-                gate = "WIRE"
+                gate = "Wire"
                 args = ("./supertile_layout_generator", "-r", gate, directionIn, directionOut)
 
                 # Execute programm and read output
@@ -593,7 +593,7 @@ def generate1in1outINVERTER(outputFile) :
         for directionIn in DIRECTIONS :# Represents the input wire
             if directionIn != directionOut :
                 # Prepare programm inputs
-                gate = "INVERTER"
+                gate = "Inverter"
                 args = ("./supertile_layout_generator", "-r", gate, directionIn, directionOut)
 
                 # Execute programm and read output
@@ -625,7 +625,7 @@ def generate1in0out(outputFile) :
         lookupTableForFile.append("")
     for directionIn in DIRECTIONS :# Represents the input wire
             # Prepare programm inputs
-            gate = "INPUT"
+            gate = "PInput"
             args = ("./supertile_layout_generator", "-r", gate, directionIn, "1" if directionIn == "0" else "0")
 
             # Execute programm and read output
