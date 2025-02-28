@@ -271,10 +271,10 @@ void printCoreGateList() {
             "    BLG         short for 'Basic logic gate'\n"
             "    BLGR        short for 'Basic logic gate (restricted)', Note: This version will utilize a reduced set of potential core gates.\n"
             "    Wire\n"
-            "    PInput      short for 'primary input',Note: If this core is chosen, the argument output-positions is ignored.\n"
             "    Inverter\n"
             "    Crossing    Note: If the passed paths aren't actually crossing, unexpected behaviour may happen.\n"
-            "    Bypass      Note: If the passed paths aren't actually passing by each other, unexpected behaviour may happen.\n");
+            "    Bypass      Note: If the passed paths aren't actually passing by each other, unexpected behaviour may happen.\n"
+            "    PInput      short for 'primary input',Note: If this core is chosen, the argument output-positions is ignored.\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
