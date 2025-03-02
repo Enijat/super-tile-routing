@@ -96,7 +96,7 @@ superTile* solver2in1out(int*, int*, char*, bool);
 superTile* solver1in1out(int*, int*, char*, bool);
     bool goClockwise(int, int, int);
     gate* getICore(int*, int*);
-superTile* solver1in0out(int*, bool);
+superTile* solver0in1out(int*, bool);
 superTile* solver2in2outCROSSING(int*, int*, bool);
 superTile* solver2in2outBYPASS(int*, int*, bool);
 void printLayout(superTile*);
@@ -206,13 +206,13 @@ int main(int argc, char** argv)
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver2in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-    } else if (inPositionsSize == 1 && outPositionsSize == 1 && strcmp(coreName, "PInput")) {
+    } else if (inPositionsSize == 1 && outPositionsSize == 1 && strcmp(coreName, "POutput")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
         finishedLayout = solver1in1out(inPositions, outPositions, coreName, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
-    } else if (inPositionsSize == 1 && !strcmp(coreName, "PInput")) {
+    } else if (inPositionsSize == 1 && !strcmp(coreName, "POutput")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
-        finishedLayout = solver1in0out(inPositions, printTheWirePaths);
+        finishedLayout = solver0in1out(outPositions, printTheWirePaths);
         clock_gettime(CLOCK_MONOTONIC, &end); //Runtime measurement
     } else if (inPositionsSize == 2 && outPositionsSize == 2 && !strcmp(coreName, "Crossing")) {
         clock_gettime(CLOCK_MONOTONIC, &start); //Runtime measurement
@@ -274,7 +274,7 @@ void printCoreGateList() {
             "    Inverter\n"
             "    Crossing    Note: If the passed paths aren't actually crossing, unexpected behaviour may happen.\n"
             "    Bypass      Note: If the passed paths aren't actually passing by each other, unexpected behaviour may happen.\n"
-            "    PInput      short for 'primary input', Note: If this core is chosen, the argument output-positions is ignored.\n");
+            "    POutput     short for 'primary output', Note: If this core is chosen, the argument input-positions is ignored.\n");
 }
 
 int* extractPositions (char* positionsText, int textSize) {
@@ -1009,7 +1009,7 @@ gate* getICore(int* inPosition, int* outPosition) {
     return core;
 }
 
-superTile* solver1in0out(int* inPosition, bool printTheWirePaths) {
+superTile* solver0in1out(int* outPosition, bool printTheWirePaths) {
     wireType** outerTiles = (wireType**) malloc(sizeof(wireType*)*6);
     for (int x = 0; x < 6; x++) {
         outerTiles[x] = (wireType*) malloc(sizeof(wireType)*3);
@@ -1029,8 +1029,8 @@ superTile* solver1in0out(int* inPosition, bool printTheWirePaths) {
 
     //core->name = coreName;
     int* inOutPositions = (int*) malloc(sizeof(int)*4);
-    inOutPositions[0] = inPosition[0];
-    inOutPositions[1] = (inPosition[0] + 3) % 6; //to trick the method into giving us a "straight" wire
+    inOutPositions[0] = outPosition[0];
+    inOutPositions[1] = (outPosition[0] + 3) % 6; //to trick the method into giving us a "straight" wire
     inOutPositions[2] = 42;
     
     getWireTile(inOutPositions, 5, core);
@@ -1038,7 +1038,7 @@ superTile* solver1in0out(int* inPosition, bool printTheWirePaths) {
 
     //Connect input
     outerTiles[core->inPositions[0]][0] = in1;
-    outerTiles[inPosition[0]][2] = in1;
+    outerTiles[outPosition[0]][2] = in1;
 
     superTile* super = (superTile*) malloc(sizeof(superTile));
     super->core = core;

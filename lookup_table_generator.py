@@ -625,8 +625,8 @@ def generate1in0out(outputFile) :
         lookupTableForFile.append("")
     for directionIn in DIRECTIONS :# Represents the input wire
             # Prepare programm inputs
-            gate = "PInput"
-            args = ("./supertile_layout_generator", "-r", gate, directionIn, "1" if directionIn == "0" else "0")
+            gate = "POutput"
+            args = ("./supertile_layout_generator", "-r", gate, "1" if directionIn == "0" else "0", directionIn)
 
             # Execute programm and read output
             executed_binary = subprocess.Popen(args, stdout=subprocess.PIPE)
