@@ -426,7 +426,7 @@ def generate2in2outBYPASS(outputfile) :
                     if directionIn2 != directionIn1 and directionIn2 != directionOut1 :
                         for directionOut2 in DIRECTIONS :
                             if directionOut2 != directionIn1 and directionOut2 != directionIn2 and directionOut2 != directionOut1 :
-                                if not checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut1),int(directionOut2)) :
+                                if checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut2),int(directionOut1)) :
                                     # Prepare programm inputs
                                     gate = "Bypass"
                                     outputWires = directionOut1 + directionOut2
