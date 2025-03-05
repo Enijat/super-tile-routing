@@ -106,7 +106,7 @@ def wireLookup(wireName: str) :
         case _:
             return [100, 100, 100, 100]
 
-def perfectHashFunction22(in1, out1, in2, out2) :
+def perfectHashFunction22CROSSING(in1, out1, in2, out2) :
     out1 = (out1 - in1) % 6
     in2 = (in2 - in1) % 6
     out2 = (out2 - in1) % 6
@@ -119,6 +119,46 @@ def perfectHashFunction22(in1, out1, in2, out2) :
         return 20*in1 + basicResult - 8
     else :
         return 20*in1 + 10 + basicResult - 8
+    
+def perfectHashFunction22BYPASS(in1, out1, in2, out2) :
+    out1 = (out1 - in1) % 6
+    in2 = (in2 - in1) % 6
+    out2 = (out2 - in1) % 6
+
+    match in2 :
+        case 1 :
+            basicResult = (out1 * out2) - (out1 + out2)
+            if basicResult == 7 :
+                return in1*40 + 4
+            elif basicResult == 11 :
+                return in1*40
+            else :
+                return in1*40 + basicResult
+        case 2 :
+            basicResult = (out1 - out2) + 4
+            if (out1 + out2) > 7 :
+                basicResult -= 2
+            return  in1*40 + 6 + basicResult
+        case 3 :
+            if (out1 * out2) == 10 :
+                if (out2 - out1) > 0 :
+                    return in1*40 + 15 + 4
+                else :
+                    return in1*40 + 15 + 9
+            basicResult = (out1 - out2) + 4 + 15
+            return in1*40 + basicResult
+        case 4 :
+            if (out1 * out2) == 3:
+                return in1*40 + 25 + 4
+            elif (out1 * out2) == 6:
+                return in1*40 + 25 + 5
+            basicResult = (out1 - out2) + 4 + 25
+            return in1*40 + basicResult
+        case 5 :
+            if (out1*out2) == 6 :
+                return in1*40 + 34 + 5
+            basicResult = out1 + out2 - 3
+            return in1*40 + 34 + basicResult
 
 def perfectHashFunction21(A, B, C) :
     b = (B - A) % 6 # get B and C into the same 1-5 range for all A
@@ -408,7 +448,7 @@ def generate2in2outCROSSING(outputfile) :
                                     writeCrossingWireToTable(lookupTableForSupertile, programOutput, int(directionIn2), updatedStartPosition)
 
                                     # Add array entry
-                                    lookupTableForFile[perfectHashFunction22(int(directionIn1), int(directionOut1), int(directionIn2), int(directionOut2))] = lookupTableForSupertile
+                                    lookupTableForFile[perfectHashFunction22CROSSING(int(directionIn1), int(directionOut1), int(directionIn2), int(directionOut2))] = lookupTableForSupertile
 
     # Write array to file
     writeTableStart(outputFile, 120, 10, 'lookup_table_2in2out_CROSSING')
@@ -418,7 +458,7 @@ def generate2in2outCROSSING(outputfile) :
 def generate2in2outBYPASS(outputfile) :
     lookupTableForFile = []
     for directionIn1 in DIRECTIONS :
-        for i in range(20) :
+        for i in range(40) :
             lookupTableForFile.append("")
         for directionOut1 in DIRECTIONS :
             if directionOut1 != directionIn1 :
@@ -426,7 +466,7 @@ def generate2in2outBYPASS(outputfile) :
                     if directionIn2 != directionIn1 and directionIn2 != directionOut1 :
                         for directionOut2 in DIRECTIONS :
                             if directionOut2 != directionIn1 and directionOut2 != directionIn2 and directionOut2 != directionOut1 :
-                                if checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut2),int(directionOut1)) :
+                                if not checkIfCrossing(int(directionIn1),int(directionIn2),int(directionOut1),int(directionOut2)) :
                                     # Prepare programm inputs
                                     gate = "Bypass"
                                     outputWires = directionOut1 + directionOut2
@@ -449,10 +489,10 @@ def generate2in2outBYPASS(outputfile) :
                                     writeCrossingWireToTable(lookupTableForSupertile, programOutput, int(directionIn2), updatedStartPosition)
 
                                     # Add array entry
-                                    lookupTableForFile[perfectHashFunction22(int(directionIn1), int(directionOut2), int(directionIn2), int(directionOut1))] = lookupTableForSupertile
+                                    lookupTableForFile[perfectHashFunction22BYPASS(int(directionIn1), int(directionOut1), int(directionIn2), int(directionOut2))] = lookupTableForSupertile
 
     # Write array to file
-    writeTableStart(outputFile, 120, 7, 'lookup_table_2in2out_BYPASS')
+    writeTableStart(outputFile, 240, 7, 'lookup_table_2in2out_BYPASS')
     writeTable(outputFile, lookupTableForFile)
     writeTableEnd(outputFile)
     
